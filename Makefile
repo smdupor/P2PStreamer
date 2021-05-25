@@ -1,7 +1,7 @@
 CXXFLAGS =	-I include/ -O2 -g -Wall -fmessage-length=0
 
 SRC_DIR_LIB=src
-SRC_DIR_EXE=Main
+SRC_DIR_EXE=main
 OBJ_DIR_LIB=obj/lib
 OBJ_DIR_EXE=obj/exe
 BIN_DIR=bin
@@ -26,7 +26,10 @@ $(BIN_DIR)/%:	$(OBJ_DIR_EXE)/%.o
 	$(CXX) -o $@ -s $(subst $(BIN_DIR)/,$(OBJ_DIR_EXE)/,$@).o $(OBJ_FILES_LIB) $(HEAD_FILES) $(LDFLAGS)
 
 all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
-	
+	@echo "BUILD SUCCESSFUL; CLEANING"
+	rm -f obj/lib/*.o
+	rm -f obj/exe/*.o
+
 show:
 	@echo "SRC_FILES_LIB=$(SRC_FILES_LIB)"
 	@echo "HEADERS=$(HEAD_FILES)"

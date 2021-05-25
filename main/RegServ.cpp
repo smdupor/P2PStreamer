@@ -19,7 +19,7 @@ int main(void) {
 	char *serverID = new char[1024];
 	char *outFileName = (char *) "./Downloads/hardfilename";
 	char *inFileName = (char *) "./Downloads/inhardfile";
-	std::cout << "Server (1) Client (2): ";
+	std::cout << "Server (1) (IMPLIED) Client (2): ";
 	std::cin >> choice;
 	if(choice == 1){
 		BasicServer basic(65432);
