@@ -32,11 +32,9 @@ void BasicClient::error(const char *msg){
 }
 
 int BasicClient::start(const char *id){
-	int portno, n;
+	int portno;
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
-
-	char buffer[1024];
 
 	portno = PORTNUM;
 

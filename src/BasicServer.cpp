@@ -30,10 +30,8 @@ BasicServer::~BasicServer() {
 int BasicServer::start(){
 	int sockfd, newsockfd, portno;
 	socklen_t clilen;
-	char buffer[1025];
 
 	struct sockaddr_in serv_addr, cli_addr;
-	int n;
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd<0){
