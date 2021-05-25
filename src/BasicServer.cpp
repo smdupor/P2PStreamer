@@ -52,7 +52,7 @@ int BasicServer::start(){
 		std::cout << "Error on bind";
 	}
 
-	std::cout << "LISTENTING FOR CONNECTIONS\n";
+	std::cout << "LISTENING FOR CONNECTIONS\n";
 	listen(sockfd,5);
 
 	clilen = sizeof(cli_addr);
