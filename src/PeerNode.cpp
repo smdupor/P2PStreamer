@@ -1,0 +1,60 @@
+/*
+ * PeerNode.cpp
+ *
+ * Source code for the PeerNode data structure, used to store peer data on the
+ * Registration Server
+ *
+ *  Created on: May 25, 2021
+ *      Author: smdupor
+ */
+
+#include "PeerNode.h"
+
+//Constructor for a PeerNode which has not previously registered for the system
+PeerNode::PeerNode(std::string hostname, int cookie, int port) {
+	this -> hostname = hostname;
+	this -> cookie = cookie;
+	this -> port = port;
+	activeNow = true;
+	countActive = 0;
+	timeReg =  std::time(nullptr);
+	TTL=7200;
+}
+
+//To_string functionality
+std::string PeerNode::toS() {
+	std::string value = "";
+	value = "Hostname: " + hostname + " cookie: " + std::to_string(cookie) + " Port: " + std::to_string(port)
+			+ " Time Registered: " + std::to_string(timeReg) + " TTL: " + std::to_string(TTL) + " ";
+	if (activeNow)
+		value += "Active: TRUE";
+	else
+		value += "Active: FALSE";
+	return value;
+}
+
+// Reset TTL when an active signal is received
+void PeerNode::keepAlive() {
+	TTL = 7200;
+}
+
+// Decrement TTL value when requested by controller
+void PeerNode::decTTL() {
+	TTL -= 30;
+}
+
+// Test whether this host is active
+bool PeerNode::active() {
+	return activeNow;
+}
+
+// Deactivate host when host leaves the system
+void PeerNode::leave() {
+	activeNow = false;
+	TTL = 0;
+}
+
+PeerNode::~PeerNode() {
+	// TODO Auto-generated destructor stub
+}
+

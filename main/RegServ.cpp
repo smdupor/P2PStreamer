@@ -8,35 +8,22 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <list>
+#include <ctime>
+#include <algorithm>
 
-#include "FileSender.h"
-#include "FileReceiver.h"
 #include "BasicClient.h"
 #include "BasicServer.h"
+#include "PeerNode.h"
 
 int main(void) {
-	int choice, sockfd;
-	char *serverID = new char[1024];
-	char *outFileName = (char *) "./Downloads/hardfilename";
-	char *inFileName = (char *) "./Downloads/inhardfile";
-	std::cout << "Server (1) (IMPLIED) Client (2): ";
-	std::cin >> choice;
-	if(choice == 1){
-		BasicServer basic(65432);
-		sockfd = basic.start();
-		FileReceiver fr;
 
-		fr.receive(outFileName, sockfd);
-	}
-	else if (choice == 2){
-		BasicClient basicc(65432);
-		std::cout << "Enter Server ID: ";
-		std::cin >> serverID;
-		std::cout << serverID;
-		sockfd = basicc.start(serverID);
-		FileSender fs;
-		fs.send(inFileName, sockfd);
-	}
+	std::list <PeerNode> peers;
+	peers.push_back(PeerNode("asdfasdf", 1, 2));
+	peers.push_back(PeerNode("jk;ljkli", 3, 4));
+	std::for_each(peers.begin(), peers.end(), [](PeerNode node) {
+		std::cout << node.toS() << '\n';
+	});
 
 	return EXIT_SUCCESS;
 }

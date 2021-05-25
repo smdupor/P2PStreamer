@@ -26,9 +26,12 @@ $(BIN_DIR)/%:	$(OBJ_DIR_EXE)/%.o
 	$(CXX) -o $@ -s $(subst $(BIN_DIR)/,$(OBJ_DIR_EXE)/,$@).o $(OBJ_FILES_LIB) $(HEAD_FILES) $(LDFLAGS)
 
 all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
-	@echo "BUILD SUCCESSFUL; CLEANING"
+	@echo "BUILD SUCCESSFUL; CLEANING OBJECT FILES"
 	rm -f obj/lib/*.o
 	rm -f obj/exe/*.o
+	@echo "****************************************************************************"
+	@echo "DONE. Start server using ./bin/RegServ , then start clients with ./bin/Client"
+	@echo "****************************************************************************"
 
 show:
 	@echo "SRC_FILES_LIB=$(SRC_FILES_LIB)"
