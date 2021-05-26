@@ -11,6 +11,7 @@
 #include <list>
 #include <ctime>
 #include <algorithm>
+#include <unistd.h>
 
 #include "BasicClient.h"
 #include "BasicServer.h"
@@ -19,11 +20,41 @@
 int main(void) {
 
 	std::list <PeerNode> peers;
-	peers.push_back(PeerNode("asdfasdf", 1, 2));
+	BasicServer listener = BasicServer(65432);
+	int n;
+	sockinfo socket;
+
+
+	char * buffer[2048];
+
+	bzero(buffer,2048);
+	while(1) {
+		socket = listener.start();
+		std::cout << "We found the remote IP to be: " << (std::string) socket.cli_addr;
+		while(std::strlen((const char *) buffer) == 0) {
+			sleep(0.05);
+
+			n = read(socket.socket, buffer, 1023);
+			if (n < 0)
+				std::cerr << "ERROR reading from socket";
+		}
+		std::cout <<"We received the message: ";
+		puts((const char *) buffer);
+	}
+
+
+	/*peers.push_back(PeerNode("asdfasdf", 1, 2));
+	sleep(1);
 	peers.push_back(PeerNode("jk;ljkli", 3, 4));
+	sleep(1);
 	std::for_each(peers.begin(), peers.end(), [](PeerNode node) {
 		std::cout << node.toS() << '\n';
 	});
+
+	std::for_each(peers.begin(), peers.end(), [](PeerNode node) {
+		if(node.equals("asdfasdf")) {
+			std::cout << "Match Found: " << node.toS() << '\n';
+	}});*/
 
 	return EXIT_SUCCESS;
 }

@@ -54,6 +54,26 @@ void PeerNode::leave() {
 	TTL = 0;
 }
 
+bool PeerNode::equals(PeerNode * other) {
+	if(this->cookie != other->cookie)
+		return false;
+	if(strcmp(this->hostname.c_str(), other ->hostname.c_str()) != 0)
+		return false;
+	return true;
+}
+
+bool PeerNode::equals(std::string hostname) {
+	if(strcmp(this->hostname.c_str(), hostname.c_str()) == 0)
+		return true;
+	return false;
+}
+
+bool PeerNode::equals(int cookie) {
+	if(this->cookie == cookie)
+		return true;
+	return false;
+}
+
 PeerNode::~PeerNode() {
 	// TODO Auto-generated destructor stub
 }

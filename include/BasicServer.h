@@ -8,6 +8,11 @@
 #ifndef BASICSERVER_H_
 #define BASICSERVER_H_
 
+	struct sockinfo {
+		int socket;
+		char * cli_addr;
+	};
+
 class BasicServer {
 private:
 	int PORTNUM;
@@ -15,11 +20,12 @@ private:
 	int newsockfd;
 
 public:
+
 	BasicServer(int);
 	virtual ~BasicServer();
 	int getPort();
 	int getAddr();
-	int start();
+	sockinfo start();
 };
 
 #endif /* BASICSERVER_H_ */

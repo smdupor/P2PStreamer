@@ -12,6 +12,7 @@
 
 #include <ctime>
 #include <string>
+#include <cstring>
 
 class PeerNode {
 private:
@@ -31,6 +32,9 @@ public:
 	void decTTL();
 	bool active();
 	void leave();
+	bool equals(PeerNode *);
+	bool equals(std::string);
+	bool equals(int);
 };
 
 #endif /* PEERNODE_H_ */
