@@ -13,14 +13,14 @@
 #include <algorithm>
 #include <unistd.h>
 
+#include "constants.h"
 #include "BasicClient.h"
 #include "BasicServer.h"
 #include "PeerNode.h"
 
 int main(void) {
-
 	std::list <PeerNode> peers;
-	BasicServer listener = BasicServer(65432);
+	BasicServer listener = BasicServer(controlPort);
 	int n;
 	sockinfo socket;
 
@@ -28,8 +28,8 @@ int main(void) {
 	char * buffer[2048];
 
 	bzero(buffer,2048);
-	while(1) {
-		socket = listener.start();
+	//while(1) {
+		/*socket = listener.start();
 		std::cout << "We found the remote IP to be: " << (std::string) socket.cli_addr;
 		while(std::strlen((const char *) buffer) == 0) {
 			sleep(0.05);
@@ -39,8 +39,9 @@ int main(void) {
 				std::cerr << "ERROR reading from socket";
 		}
 		std::cout <<"We received the message: ";
-		puts((const char *) buffer);
-	}
+		puts((const char *) buffer);*/
+		n = listener.listener();
+	//}
 
 
 	/*peers.push_back(PeerNode("asdfasdf", 1, 2));

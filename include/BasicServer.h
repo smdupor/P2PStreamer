@@ -26,6 +26,10 @@ public:
 	int getPort();
 	int getAddr();
 	sockinfo start();
+	int listener();
+	sockinfo accepter(int);
+	bool registration(sockinfo);
+
 };
 
 #endif /* BASICSERVER_H_ */
