@@ -17,14 +17,11 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#include "FileSender.h"
-#include "FileReceiver.h"
-#include "BasicClient.h"
-#include "BasicServer.h"
+
 #include "constants.h"
 
 int main(void) {
-	int choice, n, sockfd;
+	/*int choice, n, sockfd;
 		char *serverID = new char[1024];
 		char *outFileName = (char *) "./Downloads/hardfilename";
 		//char *inFileName = (char *) "./Downloads/inhardfile";
@@ -55,9 +52,9 @@ int main(void) {
 			n = read(sockfd, buffer, 2048);
 			std::cout << buffer;
 			close(sockfd);
-			/*FileSender fs;
-			fs.send(inFileName, sockfd);*/
-		}
+			FileSender fs;
+			fs.send(inFileName, sockfd);
+		}*/
 
 		return EXIT_SUCCESS;
 }

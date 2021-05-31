@@ -28,6 +28,7 @@
 
 #include "constants.h"
 #include "PeerNode.h"
+#include "Util.h"
 
 // Hold information about a socket
 struct sockinfo {
@@ -45,6 +46,7 @@ private:
 	bool debug;
 	std::time_t start_time;
 	int accept_reg(sockinfo sock);
+	std::string new_reg(std::vector<std::string> tokens, sockinfo sock);
 	void ttl_decrementer();
 	void verbose(std::string output);
 

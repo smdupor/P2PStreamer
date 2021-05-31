@@ -78,29 +78,97 @@ int RegistrationServer::start(){
 
 int RegistrationServer::accept_reg(sockinfo sock){
 	// Initialize buffers
-	char * in_buffer[MSG_LEN], out_buffer[MSG_LEN];
+	const char * in_buffer[MSG_LEN], *out_buffer;
 	bzero(in_buffer, MSG_LEN);
-	bzero(out_buffer, MSG_LEN);
+
 
 	// Initialize control variables and message strings
 	int n;
 	std::string in_message, out_message;
 
-	// Read initial input from the established socket
-	n = read(sock.socket, in_buffer, MSG_LEN);
-	if(n<0) {
-		verbose("Error in reading socket");
-	}
+	// Loop to read/write data to the socket as appropriate
+	while(1) {
+		// Read data from the socket
+		n = read(sock.socket, in_buffer, MSG_LEN);
+		if(n<0)
+			verbose("Error in reading socket");
 
-	// Copy buffer out to a std::string that we can work with more easily
-	in_message = std::string((const char *) in_buffer);
-	if(in_message.substr(0,4) == kCliRegister) {
-		RegState state = NEWREG;
-	}
 
+		// Copy buffer out to a std::string that we can work with more easily
+		in_message = std::string((const char *) in_buffer);
+
+		// Split the string by the delimiter so we can more easily use the message data
+		std::vector<std::string> tokens = Util::split((const std::string &) in_message, ' ');
+
+		// Handle the message as appropriate
+		if(tokens[0] == kCliRegister) {	// First message when client wishes to register
+			if(tokens[1] == "NEW"){
+				// This is a new registration, handle it by adding the client and replying with ack
+				out_message = kCliRegAck + new_reg(tokens, sock);
+				out_buffer = out_message.c_str();
+				std::cout << out_message;
+				n = write(sock.socket, (const char *) out_buffer, strlen((const char *) out_buffer));
+				if(n<0)
+					verbose("Error in writing socket");
+
+				// Now, reply with all other active members of the list
+				std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
+					if(node.active()){
+						out_message = kPeerListItem + node.to_msg();
+						out_buffer = out_message.c_str();
+						std::cout << out_message;
+						n = write(sock.socket, (const char *) out_buffer,
+								strlen((const char *) out_buffer));
+					}
+				});
+
+				// Finally, say "DONE" and close.
+				out_message = kDone + " \n";
+				out_buffer = out_message.c_str();
+				std::cout << out_message;
+				n = write(sock.socket, (const char *) out_buffer,
+						strlen((const char *) out_buffer));
+				close(sock.socket);
+				return 1;
+			}
+			else{
+				// tokens[1] Will contain the cookie
+
+			}
+			return 1;
+		}
+		else if(tokens[0] == kKeepAlive) { // This is a keepalive message
+			// tokens [1] will contain the cookie
+
+			return 2;
+		}
+		else if(tokens[0] == kLeave) { // Client is leaving the system
+			// tokens[1] will contain the cookie
+
+			return 3;
+		}
+
+		else{
+			verbose("We received an invalid message. Dropping connection.");
+			close(sock.socket);
+			return -1;
+		}
+	} //while(1)
 	return 0;
 }
-void RegistrationServer::ttl_decrementer(){
+
+std::string RegistrationServer::new_reg(std::vector<std::string> tokens, sockinfo sock) {
+	//create a new peernode for the new registrant
+	PeerNode p = PeerNode(std::string(sock.cli_addr), latest_cookie, kControlPort+latest_cookie);
+	++latest_cookie;
+
+	// Add to list of peers
+	peers.push_back(p);
+
+	// Return the messagized version
+	return p.to_msg();
+}
+void RegistrationServer::ttl_decrementer() {
 
 }
 

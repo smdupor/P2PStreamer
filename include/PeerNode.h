@@ -25,9 +25,10 @@ private:
 	time_t timeReg;
 
 public:
-	PeerNode(std::string, int, int);
+	PeerNode(std::string hostname, int cookie, int port);
 	virtual ~PeerNode();
 	std::string toS();
+	std::string to_msg();
 	void keepAlive();
 	void decTTL();
 	bool active();

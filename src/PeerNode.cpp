@@ -33,6 +33,16 @@ std::string PeerNode::toS() {
 	return value;
 }
 
+// Specialized tostring that returns the messaging-standardized format
+std::string PeerNode::to_msg() {
+	std::string value = "";
+	if (activeNow){
+		value = " " + hostname + " " + std::to_string(cookie) + " " + std::to_string(port)
+				+ " " + " " + std::to_string(TTL) + " \n";
+	}
+	return value;
+}
+
 // Reset TTL when an active signal is received
 void PeerNode::keepAlive() {
 	TTL = 7200;
