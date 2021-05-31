@@ -13,40 +13,41 @@
 
 // Universal control constants utilized by both registration server and P2P Clients
 
-inline const char *done = "DONE"; // Message indicates all data for this section of program flow is done
+inline const char *kDone = "DONE"; // Message indicates all data for this section of program flow is done
 
-inline const int ttlDecrement = 30; // TTLs shall be decremented every this many seconds
+inline const int kTTLDec = 30; // TTLs shall be decremented every this many seconds
 
+inline const int MSG_LEN = 1024; // Size that all message buffers are initialized to
 
 
 // Registration server constants and methods
 
-inline const int controlPort = 65432; // The port listening on the RS
+inline const int kControlPort = 65432; // The port listening on the RS
 
-inline const char *cliRegister = "CREG"; // Client requests to register to the RS
+inline const char *kCliRegister = "CREG"; // Client requests to register to the RS
 
-inline const char *cliRegAck = "CACK"; // Response acking this client registration and providing port, cookie
+inline const char *kCliRegAck = "CACK"; // Response acking this client registration and providing port, cookie
 
-inline const char *peerListItem = "PEER"; // Response from RS signaling message contains data for one (active) Peer
+inline const char *kPeerListItem = "PEER"; // Response from RS signaling message contains data for one (active) Peer
 
-inline const char *keepAlive = "ALIV"; // Message indicating this client is still alive
+inline const char *kKeepAlive = "ALIV"; // Message indicating this client is still alive
 
-inline const char *leave = "LEAV"; // Client indicating they are leaving the system
+inline const char *kLeave = "LEAV"; // Client indicating they are leaving the system
 
 
 // P2P Client constants and control methods
 
-inline const char *getIndex = "LIST"; // Request from a peer asking for this peer's copy of the Distributed index
+inline const char *kGetIndex = "LIST"; // Request from a peer asking for this peer's copy of the Distributed index
 
-inline const char *indexItem = "LSTI"; // Response to a peer containing a member of the distributed index on this host
+inline const char *kIndexItem = "LSTI"; // Response to a peer containing a member of the distributed index on this host
 
-inline const char *getFile = "GETF"; // Request from a peer for a file located on this host
+inline const char *kGetFile = "GETF"; // Request from a peer for a file located on this host
 
-inline const char *nackFile = "NCKF"; // Response from a peer that this file isn't available from this peer right now (Locked by another transmission)
+inline const char *kNackFile = "NCKF"; // Response from a peer that this file isn't available from this peer right now (Locked by another transmission)
 
-inline const char *sendingFile = "SEND"; // Response from a peer confirming that the peer will commence transmitting the file
+inline const char *kSendingFile = "SEND"; // Response from a peer confirming that the peer will commence transmitting the file
 
-inline const char *fileLine = "DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
+inline const char *kFileLine = "DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
 
 
 

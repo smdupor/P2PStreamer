@@ -29,7 +29,7 @@ int main(void) {
 		char *outFileName = (char *) "./Downloads/hardfilename";
 		//char *inFileName = (char *) "./Downloads/inhardfile";
 		//char *testMessage = (char *) "REG NEW";
-		std::string testMessage = std::string(cliRegister) + " NEW";
+		std::string testMessage = std::string(kCliRegister) + " NEW";
 
 		char *buffer = new char[2048];
 

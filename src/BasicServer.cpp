@@ -178,13 +178,13 @@ bool BasicServer::registration(sockinfo socket) {
 			n = read(socket.socket, buffer, 2047);
 			if (n < 0)
 				std::cerr << "ERROR reading from socket";
-			if(std::strstr((const char *) buffer, cliRegister) == (char *)buffer){
+			if(std::strstr((const char *) buffer, kCliRegister) == (char *)buffer){
 				std::cout << "registration string found";
 				bzero(response_buffer, 1024);
 /*				memcpy(response_buffer, cliRegAck, 4);
 				response_buffer[5]= " ";
 				response_buffer[6]*/
-				response = std::string(cliRegAck) + " " + std::string(socket.cli_addr) + "  Cookie 2";
+				response = std::string(kCliRegAck) + " " + std::string(socket.cli_addr) + "  Cookie 2";
 				n = write(socket.socket, response.c_str(), std::strlen(response.c_str()));
 				std::cout  << response;
 				close(socket.socket);
