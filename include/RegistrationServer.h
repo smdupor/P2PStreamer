@@ -24,31 +24,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
- #include <arpa/inet.h>
+#include <arpa/inet.h>
 
 #include "constants.h"
-#include "PeerNode.h"
-#include "Util.h"
+//#include "PeerNode.h"
+//#include "Util.h"
+#include "NetworkCommunicator.h"
 
-// Hold information about a socket
-struct sockinfo {
-		int socket;
-		char * cli_addr;
-	};
-
-class RegistrationServer {
+class RegistrationServer: public NetworkCommunicator  {
 private:
-	std::list <PeerNode> peers;
-	std::string log;
 	int latest_cookie;
-	bool lock;
-	int port;
-	bool debug;
-	std::time_t start_time;
 	int accept_reg(sockinfo sock);
 	std::string new_reg(std::vector<std::string> tokens, sockinfo sock);
-	void ttl_decrementer();
-	void verbose(std::string output);
 
 public:
 	RegistrationServer(std::string logfile, bool verbose_debug);
