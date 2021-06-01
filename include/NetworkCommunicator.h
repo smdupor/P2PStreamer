@@ -11,14 +11,14 @@
 #define INCLUDE_NETWORKCOMMUNICATOR_H_
 
 #include <iostream>
-#include <string>
 #include <list>
-#include <ctime>
 #include <vector>
 
-#include <stdlib.h>
+#include <string.h>
 
+#include "constants.h"
 #include "PeerNode.h"
+
 
 // Hold information about a socket
 struct sockinfo {

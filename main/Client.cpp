@@ -7,18 +7,8 @@
 //============================================================================
 
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string>
-#include <netdb.h>
-#include <unistd.h>
 
-
-#include "constants.h"
+#include "P2PClient.h"
 
 int main(void) {
 	/*int choice, n, sockfd;

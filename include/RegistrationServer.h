@@ -15,6 +15,7 @@
 #include <ctime>
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 #include <string.h>
 #include <stdio.h>
@@ -26,9 +27,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#include "constants.h"
-//#include "PeerNode.h"
-//#include "Util.h"
 #include "NetworkCommunicator.h"
 
 class RegistrationServer: public NetworkCommunicator  {

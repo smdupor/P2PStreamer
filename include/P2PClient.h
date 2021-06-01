@@ -15,6 +15,7 @@
 #include <ctime>
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 #include <string.h>
 #include <stdio.h>
@@ -24,24 +25,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
- #include <arpa/inet.h>
+#include <arpa/inet.h>
 
-#include "constants.h"
-#include "PeerNode.h"
-#include "Util.h"
+#include "NetworkCommunicator.h"
 
-// Hold information about a socket
-struct sockinfo {
-		int socket;
-		char * cli_addr;
-	};
-
-class P2PClient {
+class P2PClient : public NetworkCommunicator {
 private:
-
+	const char * reg_serv;
 
 public:
-	P2PClient();
+	P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
 	virtual ~P2PClient();
 	int start();
 };
