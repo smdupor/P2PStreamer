@@ -11,15 +11,14 @@
 #define INCLUDE_P2PCLIENT_H_
 
 #include <iostream>
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 #include <list>
 #include <ctime>
 #include <algorithm>
-#include <cstring>
 #include <vector>
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -31,12 +30,12 @@
 
 class P2PClient : public NetworkCommunicator {
 private:
-	const char * reg_serv;
+   const char *reg_serv;
 
 public:
-	P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
-	virtual ~P2PClient();
-	int start();
+   P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
+   ~P2PClient() override;
+   int start();
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */
