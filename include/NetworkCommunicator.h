@@ -20,7 +20,6 @@
 #include "constants.h"
 #include "PeerNode.h"
 
-
 // Hold information about a socket
 struct sockinfo {
 		int socket;
@@ -42,9 +41,7 @@ protected:
    std::string receive(int sockfd);
 
 public:
-//	virtual NetworkCommunicator();
 	virtual ~NetworkCommunicator();
-
 };
 
 #endif /* INCLUDE_NETWORKCOMMUNICATOR_H_ */

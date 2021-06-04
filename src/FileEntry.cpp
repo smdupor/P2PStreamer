@@ -4,10 +4,12 @@
 
 #include "FileEntry.h"
 
-FileEntry::FileEntry(int id, std::string host_ident, char *path, bool local){
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local){
    lock=true;
    this->id = id;
+   this->cookie = cookie;
    this->hostname = hostname;
+   std::cout << path;
    this->path = path;
    this->local = local;
    lock = false;
@@ -40,4 +42,16 @@ void FileEntry::clear_lock() {
 }
 void FileEntry::set_local(){
    local = true;
+}
+std::string FileEntry::to_s() {
+   if (local){
+      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: TRUE Host: " + hostname +
+             " Cookie: " + std::to_string(cookie);
+   }
+   else
+   {
+      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: FALSE Host: " + hostname +
+             " Cookie: " + std::to_string(cookie);
+   }
+
 }

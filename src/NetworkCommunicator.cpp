@@ -6,6 +6,7 @@
  */
 
 #include "NetworkCommunicator.h"
+#include "P2PClient.h"
 
 // Split up a string into a vector of substrings based on delimiter character
 std::vector<std::string> NetworkCommunicator::split(const std::string &input, char delim){

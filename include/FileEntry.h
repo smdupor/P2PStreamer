@@ -7,18 +7,18 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring>
 
 class FileEntry {
 private:
    bool local;
    bool lock;
-   char *path;
-   int length;
-   int id;
+   std::string path;
+   int length, id, cookie;
    std::string hostname;
 
 public:
-   FileEntry(int id, std::string hostname, char *path, bool local);
+   FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local);
    std::ifstream get_ifstream();
    std::ofstream get_ofstream();
    int get_length();
@@ -26,6 +26,7 @@ public:
    void set_lock();
    void clear_lock();
    void set_local();
+   std::string to_s();
 };
 
 
