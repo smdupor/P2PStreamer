@@ -25,12 +25,21 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "NetworkCommunicator.h"
 
 class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
+   std::string hostname;
+   int ttl;
+   int cookie;
+   int port;
+
+   void register_new(int sockfd);
+   void get_peer_list();
+   void keep_alive();
 
 public:
    P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);

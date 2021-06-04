@@ -25,14 +25,19 @@ private:
 	time_t timeReg;
 
 public:
-	PeerNode(std::string hostname, int cookie, int port);
+	PeerNode(std::string hostname, int cookie, int port); // Used on the registration server
+   PeerNode(std::string hostname, int cookie, int port, int ttl); // Used on P2P Clients
 	virtual ~PeerNode();
 	std::string toS();
 	std::string to_msg();
 	void keepAlive();
 	void decTTL();
-	bool active();
 	void leave();
+	void set_active(int ttl);
+	void set_inactive();
+
+	// Getters
+   bool active();
 	bool equals(PeerNode *);
 	bool equals(std::string);
 	bool equals(int);

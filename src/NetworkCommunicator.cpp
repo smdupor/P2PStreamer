@@ -36,6 +36,38 @@ void NetworkCommunicator::ttl_decrementer() {
 	//Override in subclasses
 }
 
+void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
+   int n;
+   const char *out_buffer;
+
+   out_buffer = out_message.c_str();
+   //std::cout << out_message;
+   verbose("Sent: " + out_message);
+   n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
+
+   if (n<0)
+      verbose("Error on write to buffer");
+
+}
+
+std::string NetworkCommunicator::receive(int sockfd) {
+   int n;
+   char *in_buffer[MSG_LEN];
+   bzero(in_buffer, MSG_LEN);
+
+   std::string in_message;
+
+   n = read(sockfd, in_buffer, MSG_LEN);
+   if(n<0)
+      verbose("Error in reading socket");
+
+   // Copy buffer out to a std::string that we can work with more easily
+   in_message = std::string((char *) in_buffer);
+   sleep(0.5);
+   verbose(std::string("Recv: " + in_message));
+   return in_message;
+}
+
 NetworkCommunicator::~NetworkCommunicator() {
 	//Empty Destructor
 

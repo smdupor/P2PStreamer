@@ -24,7 +24,7 @@ RegistrationServer::~RegistrationServer() {
 
 // Starts the registration server, creates a socket and listens/accepts/handles new connections
 int RegistrationServer::start(){
-	int sockfd; // socket descriptors
+	int sockfd; // socket descriptor
 	socklen_t clilen; //client length
 	struct sockaddr_in serv_addr, cli_addr; //socket addresses
 	sockinfo accepted_socket; // Values passed on once a connection is accepted
@@ -140,8 +140,11 @@ int RegistrationServer::accept_reg(sockinfo sock){
 		else if(tokens[0] == kKeepAlive) { // This is a keepalive message
 			// tokens [1] will contain the cookie
 			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
+			   // Find correct node
 								if(node.equals(atoi(tokens[1].c_str()))){
-									node.keepAlive();
+									// Update TTL
+								   node.keepAlive();
+								   //Reply to client
 									out_message = kDone + "\n";
 									out_buffer = out_message.c_str();
 									std::cout << out_message;
@@ -154,8 +157,11 @@ int RegistrationServer::accept_reg(sockinfo sock){
 		else if(tokens[0] == kLeave) { // Client is leaving the system
 			// tokens[1] will contain the cookie
 			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
+			   // Find correct node
 								if(node.equals(atoi(tokens[1].c_str()))){
+								   // Update the node
 									node.leave();
+									// Reply to the client
 									out_message = kDone + "\n";
 									out_buffer = out_message.c_str();
 									std::cout << out_message;
@@ -175,6 +181,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 		}
 	} //while(1)
 
+	// Loop has exited; we are done, close socket
 	close(sock.socket);
 	return 0;
 }

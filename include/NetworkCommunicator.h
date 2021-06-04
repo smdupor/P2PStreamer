@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <string.h>
+#include <unistd.h>
 
 #include "constants.h"
 #include "PeerNode.h"
@@ -37,10 +38,13 @@ protected:
 	void verbose(std::string output);
 	virtual void ttl_decrementer();
 	std::vector<std::string> split(const std::string &input, char delim);
+   void transmit(int sockfd, std::string &out_message);
+   std::string receive(int sockfd);
 
 public:
 //	virtual NetworkCommunicator();
 	virtual ~NetworkCommunicator();
+
 };
 
 #endif /* INCLUDE_NETWORKCOMMUNICATOR_H_ */

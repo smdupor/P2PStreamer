@@ -21,6 +21,15 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port) {
 	TTL=7200;
 }
 
+//Constructor for a PeerNode which has not previously registered for the system
+PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
+   this -> hostname = hostname;
+   this -> cookie = cookie;
+   this -> port = port;
+   activeNow = true;
+   TTL=ttl;
+}
+
 //To_string functionality
 std::string PeerNode::toS() {
 	std::string value = "";
@@ -33,13 +42,34 @@ std::string PeerNode::toS() {
 	return value;
 }
 
-// Specialized tostring that returns the messaging-standardized format
+/* Specialized tostring that returns the messaging-standardized format
+ * Example: For Host bob.alice.com with cookie 432 on Port 1234 with ttl 300, will return:
+ * " Host: bob.alice.com Cookie: 432 Port: 1234 TTL: 300 \n"
+ * Tokenized:
+ * [0] Control Port (NOT SET HERE, SET IN CALLER FUNCTION)
+ * [1] Host:
+ * [2] <hostname>
+ * [3] Cookie:
+ * [4] <cookie ID>
+ * [5] Port:
+ * [6] <port number>
+ * [7] TTL:
+ * [8] <TTL value>
+ * [9] Active:
+ * [10] TRUE
+ * [11] <cr><lf>
+ */
 std::string PeerNode::to_msg() {
 	std::string value = "";
 	if (activeNow){
-		value = " " + hostname + " " + std::to_string(cookie) + " " + std::to_string(port)
-				+ " " + " " + std::to_string(TTL) + " \n";
+		value = " Host: " + hostname + " Cookie: " + std::to_string(cookie) + " Port: " + std::to_string(port)
+				+ " TTL: " + std::to_string(TTL) + " Active: TRUE" + " \n";
 	}
+	else {
+      value = " Host: " + hostname + " Cookie: " + std::to_string(cookie) + " Port: " + std::to_string(port)
+              + " TTL: " + std::to_string(TTL) + " Active: FALSE" + " \n";
+   }
+
 	return value;
 }
 
@@ -51,6 +81,22 @@ void PeerNode::keepAlive() {
 // Decrement TTL value when requested by controller
 void PeerNode::decTTL() {
 	TTL -= 30;
+}
+
+void PeerNode::set_active(int ttl) {
+   TTL = ttl;
+   activeNow = true;
+
+   // If host has actually timed out, make it inactive.
+   if(TTL <= 0){
+      TTL = 0;
+      activeNow = false;
+   }
+}
+
+void PeerNode::set_inactive() {
+   TTL = 0;
+   activeNow = false;
 }
 
 // Test whether this host is active
