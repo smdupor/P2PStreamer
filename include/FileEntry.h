@@ -27,6 +27,10 @@ public:
    void clear_lock();
    void set_local();
    std::string to_s();
+   std::string to_msg();
+   bool equals(int id, int cookie);
+   bool equals (int id);
+   bool is_local();
 };
 
 

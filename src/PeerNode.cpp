@@ -93,10 +93,8 @@ void PeerNode::set_active(int ttl) {
    activeNow = true;
 
    // If host has actually timed out, make it inactive.
-   if(TTL <= 0){
-      TTL = 0;
-      activeNow = false;
-   }
+   if(TTL <= 0)
+      set_inactive();
 }
 
 void PeerNode::set_inactive() {

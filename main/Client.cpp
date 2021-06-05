@@ -11,7 +11,7 @@
 
 #include "P2PClient.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
    int listen_socket, newsockfd;
    socklen_t clilen; //client length
    struct sockaddr_in serv_addr, cli_addr; //socket addresses
@@ -19,7 +19,6 @@ int main(void) {
    std::vector<std::unique_ptr<std::thread>> threads;
 
 	std::string server_id;
-   char choose;
 
    std::cout << "Enter Server ID ('0' for localhost): ";
    std::cin >> server_id;
@@ -28,8 +27,15 @@ int main(void) {
 
    P2PClient client = P2PClient(server_id, "logs/logfileexample.txt", true);
 
-   std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
-   std::cin >> choose;
+   //std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
+   //std::cin >> choose;
+
+   if(argc != 2)
+      return EXIT_FAILURE;
+
+   char choose = argv[1][0];
+
+   std::cout << "Starting Client with Code:   " << choose<<"   \n";
 
    switch(choose) {
       case 'a': client.start("conf/a.conf"); break;
@@ -45,26 +51,22 @@ int main(void) {
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 
-   //std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
-
-   //////////////////////////////////////NOTES FOR TOMORROW///////////////////////////
-   /// The first thing to address is the fact that a failed connection attempt brings the whole system down.
-   // Need to make it so that when a connection
+   std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+   keep_alive_thread.detach();
 
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
+   downloader_thread.detach();
 
    listen_socket = client.listener();
 
-   while(1){
-      //std::cout << "Attempting an accept";
+   while(client.get_system_on()){
       newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
-      //std::cout << "starting a thread"<<"\n";
       std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
       accept_thread.detach();
    }
 
-   //client.debug_print_hosts_and_files();
-   //downloader_thread.join();
+   keep_alive_thread.join();
 
+   std::cout << "*********************System is exiting successfully*********************\n";
 		return EXIT_SUCCESS;
 }

@@ -23,6 +23,10 @@ inline const int MSG_LEN = 1024; // Size that all message buffers are initialize
 
 inline const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.
 
+inline const int kKeepAliveTimeout = 120; // Seconds between keepalive pings
+
+inline const int kEmptyBufferSleep = 100; // Quantity of microseconds the system should sleep for when it expects more msgs.
+
 
 // Registration server constants and methods
 

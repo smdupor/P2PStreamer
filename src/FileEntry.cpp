@@ -9,7 +9,6 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
-   std::cout << path;
    this->path = path;
    this->local = local;
    lock = false;
@@ -54,4 +53,20 @@ std::string FileEntry::to_s() {
              " Cookie: " + std::to_string(cookie);
    }
 
+}
+
+std::string FileEntry::to_msg() {
+   return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
+}
+
+bool FileEntry::equals(int id, int cookie){
+   return this->id == id && this->cookie == cookie;
+}
+
+bool FileEntry::equals(int id){
+   return this->id == id;
+}
+
+bool FileEntry::is_local(){
+   return local;
 }

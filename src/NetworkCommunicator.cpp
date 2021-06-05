@@ -26,10 +26,10 @@ std::vector<std::string> NetworkCommunicator::split(const std::string &input, ch
 }
 
 
-// Prints debug output to the terminal when "verbose" mode is in use
-void NetworkCommunicator::verbose(std::string output) {
+// Prints debug output to the terminal when "verbose" mode is in use.
+void NetworkCommunicator::verbose(std::string input) {
 	if (debug){
-      std::cout << "\033[35m" << output << "\033[0m" << std::endl;
+      std::cout << "\033[35m" << input << "\033[0m" << std::endl;
 	}
 }
 
@@ -74,10 +74,39 @@ NetworkCommunicator::~NetworkCommunicator() {
 
 }
 
+/*************************Printers. For convenience, here is the ansi code chart:************
+ * Name            FG  BG
+Black           30  40
+Red             31  41
+Green           32  42
+Yellow          33  43
+Blue            34  44
+Magenta         35  45
+Cyan            36  46
+White           37  47
+Bright Black    90  100
+Bright Red      91  101
+Bright Green    92  102
+Bright Yellow   93  103
+Bright Blue     94  104
+Bright Magenta  95  105
+Bright Cyan     96  106
+Bright White    97  107
+ *
+ *
+ *
+ */
+
+
+
 void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
    std::cout << "\033[32m" << input << "\033[0m" << std::endl;
 }
 
 void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
    std::cout << "\033[31m" << input << "\033[0m" << std::endl;
+}
+
+void NetworkCommunicator::error(std::string input){
+   std::cout << "\033[91m" << input << "\033[0m" << std::endl;
 }
