@@ -8,6 +8,7 @@
  *      Author: smdupor
  */
 
+#include <constants.h>
 #include "PeerNode.h"
 
 //Constructor for a PeerNode which has not previously registered for the system
@@ -19,6 +20,7 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port) {
 	countActive = 0;
 	timeReg =  std::time(nullptr);
 	TTL=7200;
+	dead_count = 0;
 }
 
 //Constructor for a PeerNode which has not previously registered for the system
@@ -28,6 +30,7 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
    this -> port = port;
    activeNow = true;
    TTL=ttl;
+   dead_count = 0;
 }
 
 //To_string functionality
@@ -79,8 +82,8 @@ void PeerNode::keepAlive() {
 }
 
 // Decrement TTL value when requested by controller
-void PeerNode::decTTL() {
-	TTL -= 30;
+void PeerNode::dec_ttl() {
+	TTL -= kTTLDec;
 	if (TTL < 0)
 	   TTL = 0;
 }
@@ -144,4 +147,21 @@ void PeerNode::decTTL(int seconds) {
    TTL -= seconds;
    if (TTL <0)
       TTL = 0;
+}
+
+int PeerNode::get_port(){
+   return port;
+}
+
+void PeerNode::report_down(){
+   ++dead_count;
+   if(dead_count > kTimeoutAttempts){
+      activeNow = false;
+      TTL=0;
+   }
+}
+
+void PeerNode::reset_down() {
+   dead_count = 0;
+   activeNow = true;
 }

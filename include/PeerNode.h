@@ -23,6 +23,7 @@ private:
 	int port;
 	int countActive;
 	time_t timeReg;
+	int dead_count;
 
 public:
 	PeerNode(std::string hostname, int cookie, int port); // Used on the registration server
@@ -31,11 +32,13 @@ public:
 	std::string toS();
 	std::string to_msg();
 	void keepAlive();
-	void decTTL();
+	void dec_ttl();
 	void decTTL(int seconds);
 	void leave();
 	void set_active(int ttl);
 	void set_inactive();
+	void report_down();
+	void reset_down();
 
 	// Getters
    bool active();
@@ -43,6 +46,7 @@ public:
 	bool equals(std::string);
 	bool equals(int);
 	std::string get_address();
+	int get_port();
 
 };
 

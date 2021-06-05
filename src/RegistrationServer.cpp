@@ -97,7 +97,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 
 		// Copy buffer out to a std::string that we can work with more easily
 		in_message = std::string((const char *) in_buffer);
-
+      print_recv(in_message);
 		// Split the string by the delimiter so we can more easily use the message data
 		std::vector<std::string> tokens = split((const std::string &) in_message, ' ');
 
@@ -107,7 +107,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 				// This is a new registration, handle it by adding the client and replying with ack
 				out_message = kCliRegAck + new_reg(tokens, sock);
 				out_buffer = out_message.c_str();
-				std::cout << out_message;
+            print_sent(out_message);
 				n = write(sock.socket, (const char *) out_buffer, strlen((const char *) out_buffer));
 				if(n<0)
 					verbose("Error in writing socket");

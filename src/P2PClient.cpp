@@ -26,7 +26,7 @@ P2PClient::~P2PClient() {
 // Boot up the P2P client and make first registration
 void P2PClient::start(std::string config_file) {
    // Connect to the Registration Server and Register
-   int sockfd = outgoing_connection(reg_serv);
+   int sockfd = outgoing_connection(reg_serv, kControlPort);
    get_peer_list(sockfd, true);
 
    // Load our configuration file to set up the local files in our distributed DB
@@ -101,7 +101,7 @@ void P2PClient::keep_alive() {
       std::cout << "sleeping for 10 in keepalive";
       std::this_thread::sleep_for(std::chrono::seconds(10));
       for(PeerNode p : peers){
-         p.decTTL();
+         p.dec_ttl();
       }
     //  int sockfd = outgoing_connection(reg_serv);
     //  std::string outgoing_message = kKeepAlive + " " + std::to_string(cookie) + " \n";
@@ -109,16 +109,18 @@ void P2PClient::keep_alive() {
    }
 }
 
-int P2PClient::outgoing_connection(std::string hostname) {
+int P2PClient::outgoing_connection(std::string hostname, int port) {
    struct sockaddr_in serv_addr;
    struct hostent *server;
 
-   int port = kControlPort;
+  // int port = kControlPort;
    int sockfd;
 
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-   if (sockfd < 0)
+   if (sockfd < 0) {
       verbose("ERROR opening socket");
+      return -1;
+   }
 
    server = gethostbyname(hostname.c_str());
 
@@ -127,8 +129,10 @@ int P2PClient::outgoing_connection(std::string hostname) {
    bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 
    serv_addr.sin_port = htons(port);
-   if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+   if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
       verbose("ERROR connecting to remote socket");
+      return -1;
+   }
    return sockfd;
 }
 
@@ -212,7 +216,7 @@ int P2PClient::listener() {
    }
 
    // Listen for new connections
-   verbose("LISTENING FOR CONNECTIONS");
+   verbose("LISTENING FOR CONNECTIONS on port: " + std::to_string(port));
    listen(sockfd,10);
    clilen = sizeof(cli_addr);
 /*
@@ -235,29 +239,45 @@ return sockfd;
 }
 
 void P2PClient::accept_download_request(int sockfd){
-   std::cout << "I am accepting an external connection -- I got: " << receive(sockfd);
+   //std::cout << "Starting accept\n";
+   //sleep(1);
+   //std::cout << "Continuing accept\n";
+   std::string temp =  receive(sockfd);
    close(sockfd);
 }
 
 void P2PClient::downloader(){
    std::string remote_addr, outgoing_message;
+   int remote_port, sockfd;
    int i=0;
+
+   sleep(2);
 
    while (this->expected_qty > i){
 
 
       ///////////////for now, just contact the first one////////////////////
-      for (PeerNode p : peers){
-     // remote_addr = p.get_address();
-     // sockfd = outgoing_connection(remote_addr.c_str());
-     // outgoing_message = "This message is only a test from " + hostname;
-     // transmit(sockfd, outgoing_message);
-      //close(sockfd);
+      for (PeerNode &p : peers){
+         //std::cout << "The remote peer list says: " << p.toS();
+         if(p.active()){
+            remote_addr = p.get_address();
+            remote_port = p.get_port();
+            sockfd = outgoing_connection(remote_addr.c_str(), remote_port);
+            if(sockfd > 0) {
+               outgoing_message =
+                       "This message is only a test from " + hostname + " on port " + std::to_string(port) + " randseed: " +
+                       std::to_string(rand() % 100) + "\n";
+               transmit(sockfd, outgoing_message);
+               close(sockfd);
+            } else {
+               p.report_down();
+            }
+         }
       }
       ++i;
-      std::cout<<"Sleeping for 2 in downloader\n";
+      //std::cout<<"Sleeping for 2 in downloader\n";
       sleep(2);
-      int sockfd = outgoing_connection(reg_serv);
+      sockfd = outgoing_connection(reg_serv, kControlPort);
       get_peer_list(sockfd, false);
       close(sockfd);
       if(i%12 == 0){

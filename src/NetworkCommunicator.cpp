@@ -29,7 +29,7 @@ std::vector<std::string> NetworkCommunicator::split(const std::string &input, ch
 // Prints debug output to the terminal when "verbose" mode is in use
 void NetworkCommunicator::verbose(std::string output) {
 	if (debug){
-		std::cout << output << std::endl;
+      std::cout << "\033[35m" << output << "\033[0m" << std::endl;
 	}
 }
 
@@ -43,7 +43,7 @@ void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
 
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-   verbose("Sent: " + out_message);
+   print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n<0)
@@ -65,11 +65,19 @@ std::string NetworkCommunicator::receive(int sockfd) {
    // Copy buffer out to a std::string that we can work with more easily
    in_message = std::string((char *) in_buffer);
    sleep(0.5);
-   verbose(std::string("Recv: " + in_message));
+   print_recv(in_message);
    return in_message;
 }
 
 NetworkCommunicator::~NetworkCommunicator() {
 	//Empty Destructor
 
+}
+
+void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
+   std::cout << "\033[32m" << input << "\033[0m" << std::endl;
+}
+
+void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
+   std::cout << "\033[31m" << input << "\033[0m" << std::endl;
 }

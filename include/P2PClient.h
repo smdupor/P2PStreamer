@@ -45,7 +45,7 @@ private:
 
    void get_peer_list(int sockfd, bool registration);
 
-   int outgoing_connection(std::string hostname);
+   int outgoing_connection(std::string hostname, int port);
    void parse_config(std::string config_file);
 
 public:

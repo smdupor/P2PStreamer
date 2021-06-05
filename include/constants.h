@@ -21,6 +21,8 @@ inline const int kTTLDec = 7; // TTLs shall be decremented every this many secon
 
 inline const int MSG_LEN = 1024; // Size that all message buffers are initialized to
 
+inline const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.
+
 
 // Registration server constants and methods
 

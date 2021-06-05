@@ -12,7 +12,7 @@
 #include "P2PClient.h"
 
 int main(void) {
-   int listen_socket;
+   int listen_socket, newsockfd;
    socklen_t clilen; //client length
    struct sockaddr_in serv_addr, cli_addr; //socket addresses
 
@@ -45,19 +45,26 @@ int main(void) {
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 
-   std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+   //std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+
+   //////////////////////////////////////NOTES FOR TOMORROW///////////////////////////
+   /// The first thing to address is the fact that a failed connection attempt brings the whole system down.
+   // Need to make it so that when a connection
 
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
 
- /*  listen_socket = client.listener();
+   listen_socket = client.listener();
 
    while(1){
-      int newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
+      //std::cout << "Attempting an accept";
+      newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
+      //std::cout << "starting a thread"<<"\n";
       std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
-   }*/
+      accept_thread.detach();
+   }
 
-   client.debug_print_hosts_and_files();
-   downloader_thread.join();
+   //client.debug_print_hosts_and_files();
+   //downloader_thread.join();
 
 		return EXIT_SUCCESS;
 }
