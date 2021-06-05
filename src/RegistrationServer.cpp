@@ -72,6 +72,7 @@ int RegistrationServer::start(){
 			verbose("Error on accepting connection");
 			return -1;
 		}
+		close(accepted_socket.socket);
 	}
 	return 1;
 }
@@ -171,9 +172,18 @@ int RegistrationServer::accept_reg(sockinfo sock){
 							});
 			loop_control = false;
 		}
-
+      else if(tokens[0] == kGetPeerList) { // Registered client wants the list of peers
+         for(PeerNode p : peers) { //Transmit each
+            out_message = kPeerListItem + p.to_msg();
+            transmit(sock.socket, out_message);
+         }
+         //Transmit done and exit loop.
+         out_message = kDone + " \n";
+         transmit(sock.socket, out_message);
+         loop_control = false;
+      }
 		else if(tokens[0] == ""){ // Empty buffer
-			sleep(.00005);
+			usleep(100);
 		}
 		else {
 			verbose("We received an invalid message. Dropping connection.");
@@ -198,8 +208,22 @@ std::string RegistrationServer::new_reg(std::vector<std::string> tokens, sockinf
 	return p.to_msg();
 }
 
-void ttl_decrementer() {
-	std::cout << "Decrement";
-	///TODO
+void RegistrationServer::ttl_decrementer() {
+   int seconds = kTTLDec;
+
+	while(1) {
+	   sleep(seconds);
+	   std::cout << "Sleeping for " << seconds << "in timeout func\n";
+	   for(PeerNode &p : peers){
+         p.decTTL(seconds);
+         std::cout << p.toS()<<"\n";
+	   }
+	}
+
+}
+/*
+void RegistrationServer::ttl_decrementer() {
+   ttl_decrementer(30);
 }
 
+*/

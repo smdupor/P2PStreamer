@@ -32,6 +32,7 @@ public:
 	std::string to_msg();
 	void keepAlive();
 	void decTTL();
+	void decTTL(int seconds);
 	void leave();
 	void set_active(int ttl);
 	void set_inactive();
@@ -41,6 +42,8 @@ public:
 	bool equals(PeerNode *);
 	bool equals(std::string);
 	bool equals(int);
+	std::string get_address();
+
 };
 
 #endif /* PEERNODE_H_ */

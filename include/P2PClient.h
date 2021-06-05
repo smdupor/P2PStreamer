@@ -18,6 +18,7 @@
 #include <ctime>
 #include <algorithm>
 #include <vector>
+#include <thread>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -40,20 +41,23 @@ private:
    int ttl, cookie, port;
    int expected_qty, local_qty; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
+   std::vector<std::unique_ptr<std::thread>> threads;
 
-   void register_new(int sockfd);
-   void get_peer_list();
-   void keep_alive();
+   void get_peer_list(int sockfd, bool registration);
+
    int outgoing_connection(std::string hostname);
-
    void parse_config(std::string config_file);
 
 public:
    P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
    ~P2PClient() override;
    void start(std::string config_file);
+   void keep_alive();
+   int listener();
+   //void *downloader(void *thread_id);
+   void accept_download_request(int sockfd);
    void debug_print_hosts_and_files();
-
+   void downloader();
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */

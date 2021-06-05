@@ -17,7 +17,7 @@
 
 inline const std::string kDone = "DONE"; // Message indicates all data for this section of program flow is done
 
-inline const int kTTLDec = 30; // TTLs shall be decremented every this many seconds
+inline const int kTTLDec = 7; // TTLs shall be decremented every this many seconds
 
 inline const int MSG_LEN = 1024; // Size that all message buffers are initialized to
 
@@ -31,6 +31,8 @@ inline const std::string kCliRegister = "CREG"; // Client requests to register t
 inline const std::string kCliRegAck = "CACK"; // Response acking this client registration and providing port, cookie
 
 inline const std::string kPeerListItem = "PEER"; // Response from RS signaling message contains data for one (active) Peer
+
+inline const std::string kGetPeerList = "PLST"; // Registered client requesting the updated peer list
 
 inline const std::string kKeepAlive = "ALIV"; // Message indicating this client is still alive
 

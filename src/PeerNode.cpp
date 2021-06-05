@@ -81,6 +81,8 @@ void PeerNode::keepAlive() {
 // Decrement TTL value when requested by controller
 void PeerNode::decTTL() {
 	TTL -= 30;
+	if (TTL < 0)
+	   TTL = 0;
 }
 
 void PeerNode::set_active(int ttl) {
@@ -134,3 +136,12 @@ PeerNode::~PeerNode() {
 	// TODO Auto-generated destructor stub
 }
 
+std::string PeerNode::get_address() {
+   return hostname;
+}
+
+void PeerNode::decTTL(int seconds) {
+   TTL -= seconds;
+   if (TTL <0)
+      TTL = 0;
+}

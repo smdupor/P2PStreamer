@@ -7,10 +7,17 @@
 //============================================================================
 
 #include <iostream>
+#include <thread>
 
 #include "P2PClient.h"
 
 int main(void) {
+   int listen_socket;
+   socklen_t clilen; //client length
+   struct sockaddr_in serv_addr, cli_addr; //socket addresses
+
+   std::vector<std::unique_ptr<std::thread>> threads;
+
 	std::string server_id;
    char choose;
 
@@ -38,7 +45,19 @@ int main(void) {
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 
+   std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+
+   std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
+
+ /*  listen_socket = client.listener();
+
+   while(1){
+      int newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
+      std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
+   }*/
+
    client.debug_print_hosts_and_files();
+   downloader_thread.join();
 
 		return EXIT_SUCCESS;
 }

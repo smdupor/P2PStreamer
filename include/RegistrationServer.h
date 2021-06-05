@@ -39,6 +39,7 @@ public:
 	RegistrationServer(std::string logfile, bool verbose_debug);
 	virtual ~RegistrationServer();
 	int start();
+	void ttl_decrementer();
 };
 
 #endif /* REGISTRATIONSERVER_H_ */
