@@ -19,6 +19,7 @@ private:
 
 public:
    FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local);
+   FileEntry(int id, std::string hostname, int cookie, std::string path);
    std::ifstream get_ifstream();
    std::ofstream get_ofstream();
    int get_length();
@@ -31,6 +32,15 @@ public:
    bool equals(int id, int cookie);
    bool equals (int id);
    bool is_local();
+
+
+
+   std::string get_hostname();
+   int get_id();
+   int get_cookie();
+   std::string get_path();
+   void set_length(int len);
+
 };
 
 

@@ -39,6 +39,8 @@ protected:
 	std::vector<std::string> split(const std::string &input, char delim);
    void transmit(int sockfd, std::string &out_message);
    std::string receive(int sockfd);
+   std::string receive(int sockfd, std::string debug);
+   char *receive_cstr(int sockfd);
    void print_sent(std::string input);
    void print_recv(std::string input);
    void error(std::string input);

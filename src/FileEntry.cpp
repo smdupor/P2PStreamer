@@ -12,12 +12,29 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->path = path;
    this->local = local;
    lock = false;
+   length = 0;
+}
+
+/** Used when a file has just been downloaded to us.
+ *
+ * @param id
+ * @param hostname
+ * @param cookie
+ * @param path
+ */
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path){
+   this->id = id;
+   this->cookie = cookie;
+   this->hostname = hostname;
+   this->path = path;
+   local = true;
+   lock = false;
 }
 
 std::ifstream FileEntry::get_ifstream(){
-   if(lock)
+   /*if(lock)
       return std::ifstream("");  // fail in case of file being locked.
-   lock = true;
+   lock = true;*/
    return std::ifstream(path);
 }
 std::ofstream FileEntry::get_ofstream(){
@@ -43,14 +60,20 @@ void FileEntry::set_local(){
    local = true;
 }
 std::string FileEntry::to_s() {
+   std::string adder;
+   if(lock){
+      adder = "LOCKED-TRUE. ";
+   }else {
+      adder = "NOT locked. ";
+   }
    if (local){
       return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: TRUE Host: " + hostname +
-             " Cookie: " + std::to_string(cookie);
+             " Cookie: " + std::to_string(cookie) + adder;
    }
    else
    {
       return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: FALSE Host: " + hostname +
-             " Cookie: " + std::to_string(cookie);
+             " Cookie: " + std::to_string(cookie) + adder;
    }
 
 }
@@ -67,6 +90,26 @@ bool FileEntry::equals(int id){
    return this->id == id;
 }
 
-bool FileEntry::is_local(){
+bool FileEntry::is_local() {
    return local;
+}
+
+std::string FileEntry::get_hostname(){
+   return hostname;
+}
+
+int FileEntry::get_cookie(){
+   return cookie;
+}
+
+std::string FileEntry::get_path(){
+   return path;
+}
+
+int FileEntry::get_id(){
+   return id;
+}
+
+void FileEntry::set_length(int len){
+   length = len;
 }

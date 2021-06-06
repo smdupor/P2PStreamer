@@ -128,7 +128,7 @@ bool PeerNode::equals(std::string hostname) {
 }
 
 bool PeerNode::equals(int cookie) {
-	if(this->cookie == cookie)
+	if(this->cookie == cookie && this->activeNow == true)
 		return true;
 	return false;
 }

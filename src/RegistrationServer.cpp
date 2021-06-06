@@ -81,7 +81,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 	// Initialize buffers
 	const char * in_buffer[MSG_LEN], *out_buffer;
 	bzero(in_buffer, MSG_LEN);
-
+   int timeout_counter = 0;
 
 	// Initialize control variables and message strings
 	int n;
@@ -183,7 +183,10 @@ int RegistrationServer::accept_reg(sockinfo sock){
          loop_control = false;
       }
 		else if(tokens[0] == ""){ // Empty buffer
-			usleep(100);
+			if(timeout_counter > 10000)
+			   loop_control = false;
+		   usleep(100);
+		   ++timeout_counter;
 		}
 		else {
 			verbose("We received an invalid message. Dropping connection.");

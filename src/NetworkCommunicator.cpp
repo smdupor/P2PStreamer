@@ -43,7 +43,7 @@ void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
 
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-   print_sent(out_message);
+   //print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n<0)
@@ -64,10 +64,39 @@ std::string NetworkCommunicator::receive(int sockfd) {
 
    // Copy buffer out to a std::string that we can work with more easily
    in_message = std::string((char *) in_buffer);
-   sleep(0.5);
-   print_recv(in_message);
+  // print_recv(in_message);
    return in_message;
 }
+
+std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
+   int n;
+   char *in_buffer[MSG_LEN];
+   bzero(in_buffer, MSG_LEN);
+
+   std::string in_message;
+
+   n = read(sockfd, in_buffer, MSG_LEN);
+   if(n<0)
+      verbose("Error in reading socket, Called by:" + debug);
+
+   // Copy buffer out to a std::string that we can work with more easily
+   in_message = std::string((char *) in_buffer);
+   // print_recv(in_message);
+   return in_message;
+}
+
+char *NetworkCommunicator::receive_cstr(int sockfd) {
+   int n;
+   char *in_buffer;
+   bzero(in_buffer, MSG_LEN);
+
+   n = read(sockfd, in_buffer, MSG_LEN);
+   if(n<0)
+      verbose("Error in reading socket");
+
+   return in_buffer;
+}
+
 
 NetworkCommunicator::~NetworkCommunicator() {
 	//Empty Destructor
@@ -100,13 +129,13 @@ Bright White    97  107
 
 
 void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
-   std::cout << "\033[32m" << input << "\033[0m" << std::endl;
+   std::cout << "\033[32m" << input << "\033[0m";
 }
 
 void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
-   std::cout << "\033[31m" << input << "\033[0m" << std::endl;
+   std::cout << "\033[31m" << input << "\033[0m";
 }
 
 void NetworkCommunicator::error(std::string input){
-   std::cout << "\033[91m" << input << "\033[0m" << std::endl;
+   std::cout << "\033[91m" << input << "\033[0m";
 }

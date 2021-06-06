@@ -47,6 +47,9 @@ private:
 
    int outgoing_connection(std::string hostname, int port);
    void parse_config(std::string config_file);
+   void check_files();
+   void transmit_file(int sockfd, FileEntry &file);
+   void download_file();
 
 public:
    P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);

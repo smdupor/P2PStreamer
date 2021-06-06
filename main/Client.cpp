@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
       case 'D': client.start("conf/d.conf"); break;
       case 'e': client.start("conf/e.conf"); break;
       case 'E': client.start("conf/e.conf"); break;
+      case 'f': client.start("conf/f.conf"); break;
+      case 'F': client.start("conf/f.conf"); break;
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 

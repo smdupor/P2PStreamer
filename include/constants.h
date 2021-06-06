@@ -25,7 +25,7 @@ inline const int kTimeoutAttempts = 5; // This is the number of retries before a
 
 inline const int kKeepAliveTimeout = 120; // Seconds between keepalive pings
 
-inline const int kEmptyBufferSleep = 100; // Quantity of microseconds the system should sleep for when it expects more msgs.
+inline const int kEmptyBufferSleep = 10000; // Quantity of microseconds the system should sleep for when it expects more msgs.
 
 
 // Registration server constants and methods
