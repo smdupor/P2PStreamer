@@ -84,7 +84,7 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
    // print_recv(in_message);
    return in_message;
 }
-
+/*
 char *NetworkCommunicator::receive_cstr(int sockfd) {
    int n;
    char *in_buffer;
@@ -95,7 +95,7 @@ char *NetworkCommunicator::receive_cstr(int sockfd) {
       verbose("Error in reading socket");
 
    return in_buffer;
-}
+}*/
 
 
 NetworkCommunicator::~NetworkCommunicator() {
