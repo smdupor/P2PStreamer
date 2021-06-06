@@ -13,15 +13,15 @@ class FileEntry {
 private:
    bool local;
    bool lock;
-   std::string path;
+   const char *path;
    int length, id, cookie;
    std::string hostname;
 
 public:
    FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local);
    FileEntry(int id, std::string hostname, int cookie, std::string path);
-   std::ifstream get_ifstream();
-   std::ofstream get_ofstream();
+   std::ifstream& get_ifstream();
+   std::ofstream& get_ofstream();
    int get_length();
    bool is_locked();
    void set_lock();

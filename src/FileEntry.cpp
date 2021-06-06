@@ -9,7 +9,7 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
-   this->path = path;
+   this->path = (const char *) path.c_str();
    this->local = local;
    lock = false;
    length = 0;
@@ -26,22 +26,22 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path)
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
-   this->path = path;
+   this->path = (const char *) path.c_str();
    local = true;
    lock = false;
 }
 
-std::ifstream FileEntry::get_ifstream(){
+std::ifstream& FileEntry::get_ifstream(){
    /*if(lock)
       return std::ifstream("");  // fail in case of file being locked.
    lock = true;*/
-   return std::ifstream(path);
+  // return std::ifstream(path, std::ios::in);
 }
-std::ofstream FileEntry::get_ofstream(){
-   if(lock)
-      return std::ofstream(""); // fail in case of file being locked.
-   lock = true;
-   return std::ofstream(path);
+std::ofstream& FileEntry::get_ofstream(){
+ //  if(lock)
+//      return std::ofstream((const char *) '\0', std::ios::out); // fail in case of file being locked.
+  // lock = true;
+  // return std::ofstream(path, std::ios::out);
 }
 int FileEntry::get_length(){
    return length;
@@ -103,7 +103,7 @@ int FileEntry::get_cookie(){
 }
 
 std::string FileEntry::get_path(){
-   return path;
+   return std::string(path);
 }
 
 int FileEntry::get_id(){

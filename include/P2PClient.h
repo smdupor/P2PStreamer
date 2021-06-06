@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <string>
 #include <cstdio>
 #include <cstdlib>
 #include <list>
@@ -33,6 +34,8 @@
 #include "constants.h"
 #include "PeerNode.h"
 #include "FileEntry.h"
+
+using namespace std;
 
 class P2PClient : public NetworkCommunicator {
 private:

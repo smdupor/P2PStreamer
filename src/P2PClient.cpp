@@ -191,7 +191,7 @@ void P2PClient::parse_config(std::string config_file) {
 
 void P2PClient::check_files(){
    for (FileEntry &file : files) {
-      std::ifstream infile = file.get_ifstream();
+      std::ifstream infile(file.get_path());
       // Use C-Style IO to write data to the socket.
       char buffer[1024];
       int bytecount=0;
@@ -292,7 +292,7 @@ void P2PClient::accept_download_request(int sockfd){
             auto want_file = std::find_if(files.begin(), files.end(), [&](FileEntry& f) {
                return f.equals(stoi(tokens[2]), this->cookie); });
 
-            std::ifstream infile = want_file->get_ifstream();
+            std::ifstream infile(want_file->get_path());
             out_message = kFileLine + " Length: " + std::to_string(want_file->get_length()) + " ";
             transmit(sockfd, out_message);
 /*
@@ -465,9 +465,9 @@ void P2PClient::downloader() {
       } while (incoming_message.length() == 0 && retry < 15);
 
       if (retry != 15) {
-         std::ofstream output_file = want_file->get_ofstream();
+         std::ofstream output_file(want_file->get_path());
          //////////////////////////////////////////////////////////////////////////////////////////////////////TODO: Set up parsing of the control packet properly.
-         int end_length = std::__cxx11::stoi(tokens[2]);
+         int end_length = stoi(tokens[2]);
          int bytes_written = 0;
          if (tokens.size() > 3) {
             int initial_offset = tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
@@ -490,7 +490,7 @@ void P2PClient::downloader() {
 
          // Update our quantities
          ++this->local_qty;
-         this->print_recv("I now have this many files: " + std::__cxx11::to_string(this->local_qty));
+         this->print_recv("I now have this many files: " + std::to_string(this->local_qty));
          // Check through the database and mark any entries of this file as also-locally-available.
          for (FileEntry &f : this->files) {
             if (f.get_id() == want_file->get_id()) {

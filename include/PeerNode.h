@@ -24,6 +24,8 @@ private:
 	int countActive;
 	time_t timeReg;
 	int dead_count;
+   const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
+   const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
 
 public:
 	PeerNode(std::string hostname, int cookie, int port); // Used on the registration server
