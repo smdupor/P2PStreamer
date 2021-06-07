@@ -249,11 +249,11 @@ void P2PClient::accept_download_request(int sockfd){
          in_message += receive(sockfd, "Line265");
       }*/
 
-      std::vector<std::string> messages = split((const std::string &) in_message, '\n');
+      messages = split((const std::string &) in_message, '\n');
       // Split buffer into individual messages
       for (std::string &message : messages) {
          // Split into tokens
-         std::vector<std::string> tokens = split(message, ' ');
+         tokens = split(message, ' ');
 
          // Client is requesting the index
          if (tokens[0] == kGetIndex) {
@@ -273,16 +273,16 @@ void P2PClient::accept_download_request(int sockfd){
             auto want_file = std::find_if(files.begin(), files.end(), [&](FileEntry& f) {
                return f.equals(stoi(tokens[2]), this->cookie); });
 
-							 transmit_file(sockfd, want_file);
-
+							 transmit_file(sockfd,  *want_file);
          }
       } //for
     // while(loop_control)
 }
 
-void transmit_file(int sockfd, FileEntry &want_file) {
-	std::ifstream infile(want_file->get_path());
-	out_message = kFileLine + " Length: " + std::to_string(want_file->get_length()) + " "+"\n\n";
+void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
+	std::string out_message;
+   std::ifstream infile(want_file.get_path());
+	out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " "+"\n\n";
 	transmit(sockfd, out_message);
 /*
 	verbose("I'm about to send: " + want_file->to_s());
@@ -306,10 +306,10 @@ void transmit_file(int sockfd, FileEntry &want_file) {
 				bzero(buffer, 1024);
 
 	}
-	print_sent("Just sent:" + want_file->to_s() + " \n");
+	print_sent("Just sent:" + want_file.to_s() + " \n");
 
 	infile.close();
-	want_file->clear_lock();
+	want_file.clear_lock();
 	//debug_print_hosts_and_files();
 }
 
@@ -486,10 +486,10 @@ void P2PClient::downloader() {
                f.set_local();
             }
          }
-      } else {
+/*      } else {
          // mark host as dead
-         peer->set_inactive();
-      }
+        // peer->set_inactive();
+      }*/
 
    } else {
       usleep(kEmptyBufferSleep); // Nothing available to download right now; Sleep and retry
