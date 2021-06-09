@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
    downloader_thread.detach();
 
-   listen_socket = client.listener();
+   listen_socket = client.listener(client.get_port());
 
    while(client.get_system_on()){
       newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);

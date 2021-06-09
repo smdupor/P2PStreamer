@@ -8,6 +8,42 @@
 #include "NetworkCommunicator.h"
 #include "P2PClient.h"
 
+int NetworkCommunicator::listener(int listen_port) {
+   int sockfd; // socket descriptor
+   socklen_t clilen; //client length
+   struct sockaddr_in serv_addr, cli_addr; //socket addresses
+   sockinfo accepted_socket; // Values passed on once a connection is accepted
+
+   // Create the socket
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd<0){
+      error("ERROR opening socket");
+      accepted_socket.socket = -1;
+      return -1;
+   }
+
+   // Initialize address and port values
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   serv_addr.sin_port = htons(listen_port);
+
+   // Bind the socket
+   if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))<0){
+      error("Error on socket bind");
+      return -1;
+   }
+
+   // Listen for new connections
+   verbose("LISTENING FOR CONNECTIONS on port: " + std::to_string(listen_port));
+   listen(sockfd,10);
+   clilen = sizeof(cli_addr);
+   return sockfd;
+}
+
+int NetworkCommunicator::get_port() {
+   return this->port;
+}
+
 // Split up a string into a vector of substrings based on delimiter character
 std::vector<std::string> NetworkCommunicator::split(const std::string &input, char delim){
 	std::vector<std::string> split_string; // Vector of string tokens to be returned
@@ -73,14 +109,15 @@ std::string NetworkCommunicator::receive(int sockfd) {
 		 in_message += std::string((char *) in_buffer);
 	 }
 	 // If we determine that we've got the entire message
-	 if(in_message.substr(2 == "\n\n")){
+	 if(in_message.substr(in_message.length() - 2) == "\n\n"){
 		 in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
-		 break;
+		 return in_message;
 	 }
  }
 
   // print_recv(in_message);
-   return in_message;
+  // We were unsuccessful, either the packet timed out, or was malformed and we are unable to continue.
+  return "";
 }
 
 int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
@@ -112,6 +149,23 @@ int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
 
 /** DEBUG -- REMOVING */
 std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
+   int n;
+   char *in_buffer[MSG_LEN];
+   bzero(in_buffer, MSG_LEN);
+
+   std::string in_message;
+
+   n = read(sockfd, in_buffer, MSG_LEN);
+   if(n<0)
+      verbose("Error in reading socket, Called by:" + debug);
+
+   // Copy buffer out to a std::string that we can work with more easily
+   in_message = std::string((char *) in_buffer);
+   // print_recv(in_message);
+   return in_message;
+}
+
+std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    int n;
    char *in_buffer[MSG_LEN];
    bzero(in_buffer, MSG_LEN);

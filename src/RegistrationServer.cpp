@@ -29,28 +29,8 @@ int RegistrationServer::start(){
 	struct sockaddr_in serv_addr, cli_addr; //socket addresses
 	sockinfo accepted_socket; // Values passed on once a connection is accepted
 
-	// Create the socket
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd<0){
-		verbose("ERROR opening socket");
-		accepted_socket.socket = -1;
-		return -1;
-	}
+	sockfd = listener(this->port);
 
-	// Initialize address and port values
-	bzero((char *) &serv_addr, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(port);
-
-	// Bind the socket
-	if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr))<0){
-		verbose("Error on socket bind");
-		return -1;
-	}
-
-	// Listen for new connections
-	verbose("LISTENING FOR CONNECTIONS");
-	listen(sockfd,10);
 	clilen = sizeof(cli_addr);
 
 	// Loop continuously to accept new connections
@@ -72,7 +52,8 @@ int RegistrationServer::start(){
 			verbose("Error on accepting connection");
 			return -1;
 		}
-		close(accepted_socket.socket);
+		//Let client close the conn
+		// close(accepted_socket.socket);
 	}
 	return 1;
 }
@@ -88,48 +69,31 @@ int RegistrationServer::accept_reg(sockinfo sock){
 	bool loop_control = true;
 	std::string in_message, out_message;
 
-	// Loop to read/write data to the socket as appropriate
-	while(loop_control) {
-		// Read data from the socket
-		n = read(sock.socket, in_buffer, MSG_LEN);
-		if(n<0)
-			verbose("Error in reading socket");
-
-		// Copy buffer out to a std::string that we can work with more easily
-		in_message = std::string((const char *) in_buffer);
-      print_recv(in_message);
+   in_message = receive(sock.socket);
+ std::vector<std::string> messages = split((const std::string &) in_message, '\n');
+      for(std::string &message : messages) {
 		// Split the string by the delimiter so we can more easily use the message data
-		std::vector<std::string> tokens = split((const std::string &) in_message, ' ');
+		std::vector<std::string> tokens = split((const std::string &) message, ' ');
 
 		// Handle the message as appropriate
 		if(tokens[0] == kCliRegister) {	// First message when client wishes to register
 			if(tokens[1] == "NEW"){
 				// This is a new registration, handle it by adding the client and replying with ack
-				out_message = kCliRegAck + new_reg(tokens, sock);
-				out_buffer = out_message.c_str();
-            print_sent(out_message);
-				n = write(sock.socket, (const char *) out_buffer, strlen((const char *) out_buffer));
-				if(n<0)
-					verbose("Error in writing socket");
+				out_message = kCliRegAck + new_reg(tokens, sock)+"\n";
+            transmit(sock.socket, out_message);
 
 				// Now, reply with all other active members of the list
-				std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
-					if(node.active()){
-						out_message = kPeerListItem + node.to_msg();
-						out_buffer = out_message.c_str();
-						std::cout << out_message;
-						n = write(sock.socket, (const char *) out_buffer,
-								strlen((const char *) out_buffer));
-					}
-				});
+            for(PeerNode &p : peers){
+               if(p.active()) {
+                  out_message = kPeerListItem + p.to_msg() + "\n";
+                  transmit(sock.socket, out_message);
+               }
+            }
 
 				// Finally, say "DONE" and close.
-				out_message = kDone + " \n";
-				out_buffer = out_message.c_str();
-				std::cout << out_message;
-				n = write(sock.socket, (const char *) out_buffer,
-						strlen((const char *) out_buffer));
-				loop_control = false;
+				out_message = kDone + " \n\n";
+            transmit(sock.socket, out_message);
+            loop_control = false;
 			}
 			else{
 				// tokens[1] Will contain the cookie
@@ -140,7 +104,14 @@ int RegistrationServer::accept_reg(sockinfo sock){
 		}
 		else if(tokens[0] == kKeepAlive) { // This is a keepalive message
 			// tokens [1] will contain the cookie
-			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
+			/**************************************************************************STOPPING HERE AT @@@@@@@@@@@@@2pm
+			 * Need to FIND the node to be keptalive, and update it.
+			 */
+
+
+			std::find(peers.begin(), peers.end(), [&](PeerNode node) {node.equals(stoi(tokens[1]))})
+
+			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {node.equals(stoi(tokens[1]))
 			   // Find correct node
 								if(node.equals(atoi(tokens[1].c_str()))){
 									// Update TTL
