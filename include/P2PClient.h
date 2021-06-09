@@ -38,7 +38,7 @@ class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
    std::string hostname, path_prefix;
-   int ttl, cookie, port;
+   int ttl, cookie, port, timeout_counter;
    int expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
    bool system_on;

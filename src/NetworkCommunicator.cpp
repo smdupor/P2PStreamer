@@ -52,22 +52,65 @@ void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
 }
 
 std::string NetworkCommunicator::receive(int sockfd) {
-   int n;
+   int n=0, timeout_counter=0;
    char *in_buffer[MSG_LEN];
    bzero(in_buffer, MSG_LEN);
 
-   std::string in_message;
+   std::string in_message = std::string("");
 
+	 // As long as data is coming in, keep reading.
+	 while(n >= 0 && timeout_counter < kTimeoutRetry){
+	 bzero(in_buffer, MSG_LEN);
    n = read(sockfd, in_buffer, MSG_LEN);
-   if(n<0)
-      verbose("Error in reading socket");
 
-   // Copy buffer out to a std::string that we can work with more easily
-   in_message = std::string((char *) in_buffer);
+   if(n<0)
+      error("Error in reading socket");
+	 else if(n == 0) {
+		 usleep(kEmptyBufferSleep);
+		 timeout_counter += 1;
+	 }
+	 else {
+		 in_message += std::string((char *) in_buffer);
+	 }
+	 // If we determine that we've got the entire message
+	 if(in_message.substr(2 == "\n\n")){
+		 in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
+		 break;
+	 }
+ }
+
   // print_recv(in_message);
    return in_message;
 }
 
+int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
+   struct sockaddr_in serv_addr;
+   struct hostent *server;
+
+  // int port = kControlPort;
+   int sockfd;
+
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   if (sockfd < 0) {
+      verbose("ERROR opening socket");
+      return -1;
+   }
+
+   server = gethostbyname(hostname.c_str());
+
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+
+   serv_addr.sin_port = htons(port);
+   if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+      verbose("ERROR connecting to remote socket");
+      return -1;
+   }
+   return sockfd;
+}
+
+/** DEBUG -- REMOVING */
 std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
    int n;
    char *in_buffer[MSG_LEN];

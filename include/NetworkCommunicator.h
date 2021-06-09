@@ -36,7 +36,8 @@ protected:
    const int MSG_LEN = 1024; // Size that all message buffers are initialized to
    const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in PeerNode.h
    const int kKeepAliveTimeout = 120; // Seconds between keepalive pings
-   const int kEmptyBufferSleep = 10000; // Quantity of microseconds the system should sleep for when it expects more msgs.
+   const int kEmptyBufferSleep = 1000; // Quantity of microseconds the system should sleep for when it expects more msgs. Default to 1millisecond.
+	 const int kTimeoutRetry = 10000; // After ten seconds, assume we will not receive from the client.
 
 // Registration server constants and methods
    const int kControlPort = 65432; // The port listening on the RS
@@ -66,6 +67,7 @@ protected:
 	std::vector<std::string> split(const std::string &input, char delim);
    void transmit(int sockfd, std::string &out_message);
    std::string receive(int sockfd);
+	 int outgoing_connection(std::string hostname, int port);
    std::string receive(int sockfd, std::string debug);
    //char *receive_cstr(int sockfd);
    void print_sent(std::string input);

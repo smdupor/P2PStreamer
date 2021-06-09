@@ -45,13 +45,13 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
    std::string in_message, out_message;
 
    if(registration && cookie == -1){ // This is a new registration
-      out_message = kCliRegister + " NEW \n";
+      out_message = kCliRegister + " NEW \n\n";
       transmit(sockfd, out_message);
    } else if (registration) { // This is a returning registration
       ///////////////////////////TODO Returning Registration//////////////////////////
    }
    else { //This client is already registered and we are requesting the peer list
-      out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+" \n";
+      out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+ "\n\n";
       transmit(sockfd, out_message);
    }
 
@@ -59,9 +59,9 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
    while (loop_control) {
       // Get back response
       in_message = receive(sockfd);
-      while(!in_message.empty() && in_message.substr(in_message.length()-1)!="\n"){
+      /*while(!in_message.empty() && in_message.substr(in_message.length()-1)!="\n"){
          in_message += receive(sockfd);
-      }
+      }*/
       std::vector<std::string> messages = split((const std::string &) in_message, '\n');
       // Split buffer into individual messages
       for (size_t i=0; i< messages.size(); ++i) {
@@ -105,41 +105,21 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
 }
 
 void P2PClient::keep_alive() {
-   int sockfd;
+   int sockfd, timeout_counter;
+
    while(system_on){
-      //std::cout << "sleeping for 10 in keepalive";
-      std::this_thread::sleep_for(std::chrono::seconds(kKeepAliveTimeout));
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+			if(timeout_counter >= kKeepAliveTimeout) {
       sockfd = outgoing_connection(reg_serv, kControlPort);
-      std::string outgoing_message = kKeepAlive + " " + std::to_string(cookie) + " \n";
+			if (sockfd > 0) {
+      std::string outgoing_message = kKeepAlive + " " + std::to_string(cookie) + " \n\n";
+			std::string incoming_message = receive(sockfd); // swallow the ack
       close(sockfd);
+			timeout_counter = 0;
+		}
+		}
+
    }
-}
-
-int P2PClient::outgoing_connection(std::string hostname, int port) {
-   struct sockaddr_in serv_addr;
-   struct hostent *server;
-
-  // int port = kControlPort;
-   int sockfd;
-
-   sockfd = socket(AF_INET, SOCK_STREAM, 0);
-   if (sockfd < 0) {
-      verbose("ERROR opening socket");
-      return -1;
-   }
-
-   server = gethostbyname(hostname.c_str());
-
-   bzero((char *) &serv_addr, sizeof(serv_addr));
-   serv_addr.sin_family = AF_INET;
-   bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
-
-   serv_addr.sin_port = htons(port);
-   if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-      verbose("ERROR connecting to remote socket");
-      return -1;
-   }
-   return sockfd;
 }
 
 void P2PClient::parse_config(std::string config_file) {
@@ -258,16 +238,17 @@ void P2PClient::accept_download_request(int sockfd){
    bool loop_control = true;
 
    // Start by passing along the distributed database
-   while (loop_control) {
+   //while (loop_control) {
       in_message = receive(sockfd, "Line 258");
       /*if(in_message.length() >= kDone.length()){
       error("Substringing:'"+in_message.substr(in_message.length()-kDone.length()-3)+"'\n");
       while(in_message != kDone + " \n" && in_message.substr(in_message.length()-kDone.length()-3) != kDone + " \n"){
          in_message += receive(sockfd);
       }}*/
-      while(in_message.length() != 0 && in_message.substr(in_message.length()-1)!="\n"){
+    /*  while(in_message.length() != 0 && in_message.substr(in_message.length()-1)!="\n"){
          in_message += receive(sockfd, "Line265");
-      }
+      }*/
+
       std::vector<std::string> messages = split((const std::string &) in_message, '\n');
       // Split buffer into individual messages
       for (std::string &message : messages) {
@@ -282,7 +263,7 @@ void P2PClient::accept_download_request(int sockfd){
                out_message = kIndexItem + file.to_msg();
                transmit(sockfd, out_message);
             }
-            out_message = kDone + " \n";
+            out_message = kDone + " \n\n";
             transmit(sockfd, out_message);
             loop_control = false;
          }
@@ -292,45 +273,45 @@ void P2PClient::accept_download_request(int sockfd){
             auto want_file = std::find_if(files.begin(), files.end(), [&](FileEntry& f) {
                return f.equals(stoi(tokens[2]), this->cookie); });
 
-            std::ifstream infile(want_file->get_path());
-            out_message = kFileLine + " Length: " + std::to_string(want_file->get_length()) + " ";
-            transmit(sockfd, out_message);
-/*
-            verbose("I'm about to send: " + want_file->to_s());
-            sleep(1);
-            if(infile){
-               verbose("The file handle appears to be good?");
-            }*/
-            // Use C-Style IO to write data to the socket.
-            char buffer[1024];
-            int n=0;
-            bzero(buffer,1024);
-            while(infile.getline(buffer,1024)){
-                               buffer[strlen(buffer)] = '\n';
-                  n = write(sockfd, buffer, strlen(buffer));
-                  if (n < 0)
-                     error("ERROR writing file data to socket");
+							 transmit_file(sockfd, want_file);
 
-                  //print_sent(std::string(buffer));
-                  bzero(buffer, 1024);
-
-            }
-            print_sent("Just sent:" + want_file->to_s() + " \n");
-
-            infile.close();
-            want_file->clear_lock();
-            //debug_print_hosts_and_files();
-
-            loop_control = false;
-         }
-         else {
-            usleep(kEmptyBufferSleep); // Buffer was empty; Sleep for kEmptyBufferSleep microseconds
          }
       } //for
-   } // while(loop_control)
+    // while(loop_control)
 }
 
-void transmit_file(int sockfd, FileEntry &file);
+void transmit_file(int sockfd, FileEntry &want_file) {
+	std::ifstream infile(want_file->get_path());
+	out_message = kFileLine + " Length: " + std::to_string(want_file->get_length()) + " "+"\n\n";
+	transmit(sockfd, out_message);
+/*
+	verbose("I'm about to send: " + want_file->to_s());
+	sleep(1);
+	if(infile){
+		 verbose("The file handle appears to be good?");
+	}*/
+	// Use C-Style IO to write data to the socket.
+	char buffer[1024];
+	int n=0;
+	bzero(buffer,1024);
+	while(infile.getline(buffer,1024)){
+			// Add back the newline stripped by getline()
+				buffer[strlen(buffer)] = '\n';
+				// Write the line to the socket
+				n = write(sockfd, buffer, strlen(buffer));
+				if (n < 0)
+					 error("ERROR writing file data to socket");
+
+				//print_sent(std::string(buffer));
+				bzero(buffer, 1024);
+
+	}
+	print_sent("Just sent:" + want_file->to_s() + " \n");
+
+	infile.close();
+	want_file->clear_lock();
+	//debug_print_hosts_and_files();
+}
 
 void P2PClient::downloader() {
    std::string remote_addr, outgoing_message, incoming_message;
@@ -354,15 +335,16 @@ void P2PClient::downloader() {
          if (p.active()) {
             sockfd = outgoing_connection(p.get_address().c_str(), p.get_port());
             if (sockfd > 0) {
-               outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n";
+               outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
                transmit(sockfd, outgoing_message);
                bool done = false;
-               while (!done) {
-                  incoming_message = receive(sockfd, "Line355");
+               /*while (!done) {
+
                   while (incoming_message.length() != 0 &&
                          incoming_message.substr(incoming_message.length() - 1) != "\n") {
                      incoming_message += receive(sockfd, "Line357");
-                  }
+                  }*/
+									incoming_message = receive(sockfd, "Line355");
                   messages = split(incoming_message, '\n');
                   for (std::string &message : messages) {
                      tokens = split(message, ' ');
@@ -413,8 +395,8 @@ void P2PClient::downloader() {
                   }
                }
             } else { p.report_down(); }
-         }
-      }
+         } //for
+
 
       ///////////////////////TODO: Drop inactive peers from the distributed database. Maybe do this in  the hadnler????///////////////
 
@@ -430,7 +412,9 @@ void P2PClient::downloader() {
        } else {
          slowdown = 1;
       }
-
+			if(system_on == false) {
+				/////////TODO: Connect to listener then leave
+			}
    }
 }
 // Pick a file that we want to get
@@ -451,20 +435,25 @@ void P2PClient::downloader() {
       });
       // ask for the file
       sockfd = this->outgoing_connection(peer->get_address(), peer->get_port());
-      outgoing_message = kGetFile + want_file->to_msg();
+      outgoing_message = kGetFile + want_file->to_msg()+"\n";
+
+			/************************************************************************************************************************************************
+			************************************************************************************************************************************************
+			************************************************************************************************************************************************
+			LEFT OFF HERE*/
       this->transmit(sockfd, outgoing_message);
       // open the file
 
-      int retry = 0;
-      do {
+    //  int retry = 0;
+  //    do {
          //get the control packet that tells us the lengths
          incoming_message = this->receive(sockfd, "Line442");
          tokens = this->split(incoming_message, ' ');
-         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+         /*std::this_thread::sleep_for(std::chrono::milliseconds(50));
          ++retry;
       } while (incoming_message.length() == 0 && retry < 15);
-
-      if (retry != 15) {
+*/
+    //  if (retry != 15) {
          std::ofstream output_file(want_file->get_path());
          //////////////////////////////////////////////////////////////////////////////////////////////////////TODO: Set up parsing of the control packet properly.
          int end_length = stoi(tokens[2]);
