@@ -66,7 +66,7 @@ protected:
 
 	virtual void ttl_decrementer();
 	std::vector<std::string> split(const std::string &input, char delim);
-   void transmit(int sockfd, std::string &out_message);
+   void transmit(int sockfd, std::string out_message);
    std::string receive(int sockfd);
 	 int outgoing_connection(std::string hostname, int port);
    //std::string receive(int sockfd, std::string debug);

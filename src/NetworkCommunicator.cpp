@@ -75,13 +75,13 @@ void NetworkCommunicator::ttl_decrementer() {
 	//Override in subclasses
 }
 
-void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
+void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
    int n;
    const char *out_buffer;
    //usleep(50000);
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-  // print_sent(out_message);
+   print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n<0)
@@ -218,6 +218,7 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    // Copy buffer out to a std::string that we can work with more easily
    in_message = std::string((char *) in_buffer);
    // print_recv(in_message);
+   //free(in_buffer);
    return in_message;
 }
 /*
@@ -266,10 +267,13 @@ Bright White    97  107
 
 void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
    std::cout << "\033[32m" << input << "\033[0m";
+   std::cout.flush();
 }
 
 void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
    std::cout << "\033[31m" << input << "\033[0m";
+   std::cout.flush();
+
 }
 
 void NetworkCommunicator::error(std::string input){

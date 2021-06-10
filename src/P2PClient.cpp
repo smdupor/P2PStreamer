@@ -254,18 +254,19 @@ void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 	transmit(sockfd, out_message);
    std::this_thread::sleep_for(std::chrono::seconds(2));
 	// Use C-Style IO to write data to the socket.
-	char buffer[MSG_LEN];
+	char buffer[MSG_LEN*2];
 	int n=0;
-	bzero(buffer,MSG_LEN);
-	while(infile.getline(buffer,MSG_LEN)){
+	bzero(buffer,MSG_LEN*2);
+	while(infile.getline(buffer,MSG_LEN*2)){
 			// Add back the newline stripped by getline()
 				buffer[strlen(buffer)] = '\n';
+				transmit(sockfd,std::string(buffer));
 				// Write the line to the socket
-				n = write(sockfd, buffer, strlen(buffer));
-				if (n < 0)
-					 error("ERROR writing file data to socket");
+			//	n = write(sockfd, buffer, strlen(buffer));
+				//if (n < 0)
+					// error("ERROR writing file data to socket");
 			//	print_sent(std::string(buffer));
-				bzero(buffer, MSG_LEN);
+				bzero(buffer, MSG_LEN*2);
 	}
 	print_sent("Just sent:" + want_file.to_s() + " \n");
 
@@ -279,7 +280,7 @@ void P2PClient::downloader() {
    std::vector<std::string> messages, tokens;
    std::list<FileEntry>::iterator want_file;
 
-   int remote_port, sockfd;
+   int remote_port;
    int temp_id, temp_cookie, past_local_qty, slowdown = 1;
    bool picked_file = false;
 
@@ -287,14 +288,14 @@ void P2PClient::downloader() {
    while (expected_qty > local_qty) {
       past_local_qty = local_qty;
       // Contact the registration server and get the list of peers
-      sockfd = outgoing_connection(reg_serv, kControlPort);
+     int sockfd = outgoing_connection(reg_serv, kControlPort);
       get_peer_list(sockfd, false);
       close(sockfd);
 
       // Contact all the peers and get their distributed databases
       for (PeerNode &p : peers) {
          if (p.active() && !p.locked()) {
-            sockfd = outgoing_connection(p.get_address(), p.get_port());
+           int sockfd = outgoing_connection(p.get_address(), p.get_port());
             if (sockfd > 0) {
                outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
                transmit(sockfd, outgoing_message);
@@ -359,12 +360,71 @@ void P2PClient::downloader() {
             } else { p.report_down(); }
          } //for
 
+         //download_file();
 
-      ///////////////////////TODO: Drop inactive peers from the distributed database. Maybe do this in  the hadnler????///////////////
+      // Pick a file, and ask to download it
+      auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
+         return !f.is_local() && !f.is_locked();
+      });
+      if (want_file != files.end()) {
+         PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
+            return node.equals(want_file->get_cookie());
+         });
+         peer.lock();
 
-      //////////////////////TODO: Pick a file, and ask to download it //////////////////////////////
+         // ask for the file
+         sockfd = outgoing_connection(peer.get_address(), peer.get_port());
+         outgoing_message = kGetFile + want_file->to_msg()+"\n";
 
-      download_file();
+         transmit(sockfd, outgoing_message);
+
+         //get the control packet that tells us the lengths
+         incoming_message = receive_no_delim(sockfd);
+         messages = split(incoming_message, '\n');
+         if(messages[0].length() > 0) {
+            tokens = split(messages[0], ' ');
+
+            std::ofstream output_file(want_file->get_path());
+            int end_length = stoi(tokens[2]);
+            int bytes_written = 0;
+
+            // If we have gotten both the header and some data (likely) split and use the data
+            if (messages.size() > 1) {
+               int initial_offset = messages[0].length() + 1; // tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
+               incoming_message = incoming_message.substr(initial_offset);
+               output_file.write(incoming_message.c_str(), incoming_message.length());
+               bytes_written += incoming_message.length();
+            }
+
+            // Continue to get file data and write to file until we have the entire file
+            while (bytes_written < end_length) {
+               incoming_message = receive_no_delim(sockfd);
+               output_file.write(incoming_message.c_str(), incoming_message.length());
+               error(incoming_message);
+               bytes_written += incoming_message.length();
+            }
+            // Close the file and the connection.
+            output_file.close();
+            want_file->clear_lock();
+            close(sockfd);
+            peer.unlock();
+            // Add the file to the database
+            files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path()));
+
+            // Update our quantities
+            ++local_qty;
+            //print_recv("I now have this many files: " + std::to_string(local_qty));
+            // Check through the database and mark any entries of this file as also-locally-available.
+            for (FileEntry &f : files) {
+               if (f.get_id() == want_file->get_id()) {
+                  f.set_local();
+               }
+            }
+         } else {
+            error("An error occurred during the download step; Likely, a malformed packet was received.");
+         }
+      }
+
       // We have not been able to get anything new, back off the download process
       if (past_local_qty == local_qty) {
          if(slowdown < 5000)
@@ -379,6 +439,8 @@ void P2PClient::downloader() {
 			}
    }
 }
+
+
 // Pick a file that we want to get
 
 // For now, let's pick the first file in the database that we don't have. Possibly, in the future,
@@ -386,7 +448,7 @@ void P2PClient::downloader() {
    void P2PClient::download_file() {
    std::string incoming_message, outgoing_message;
    int sockfd;
-   std::vector<std::string> tokens;
+   std::vector<std::string> tokens, messages;
 
    auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
       return !f.is_local() && !f.is_locked();
@@ -401,16 +463,13 @@ void P2PClient::downloader() {
       sockfd = outgoing_connection(peer.get_address(), peer.get_port());
       outgoing_message = kGetFile + want_file->to_msg()+"\n";
 
-			/************************************************************************************************************************************************
-			************************************************************************************************************************************************
-			************************************************************************************************************************************************
-			LEFT OFF HERE*/
       transmit(sockfd, outgoing_message);
 
          //get the control packet that tells us the lengths
-         incoming_message = receive(sockfd);
-         if(incoming_message.length() > 0) {
-            tokens = split(incoming_message, ' ');
+         incoming_message = receive_no_delim(sockfd);
+         messages = split(incoming_message, '\n');
+         if(messages[0].length() > 0) {
+            tokens = split(messages[0], ' ');
 
             std::ofstream output_file(want_file->get_path());
             //////////////////////////////////////////////////////////////////////////////////////////////////////TODO: Set up parsing of the control packet properly.
@@ -418,15 +477,12 @@ void P2PClient::downloader() {
             int bytes_written = 0;
 
             // Implies that we have accidentally gotten more than the header. Makes more sense to read the header, stop, then read the data.
-        /*    if (tokens.size() > 3) {
-               int initial_offset = tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
+            if (messages.size() > 1) {
+               int initial_offset = messages[0].length() + 1; // tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
                incoming_message = incoming_message.substr(initial_offset);
                output_file.write(incoming_message.c_str(), incoming_message.length());
                bytes_written += incoming_message.length();
             }
-            else {
-               int initial_offset = 1; // Swallow the newline
-            }*/
 
             while (bytes_written < end_length) {
                incoming_message = receive_no_delim(sockfd);
