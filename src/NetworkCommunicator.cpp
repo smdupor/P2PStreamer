@@ -75,18 +75,25 @@ void NetworkCommunicator::ttl_decrementer() {
 	//Override in subclasses
 }
 
-void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
+void NetworkCommunicator::transmit_no_throttle(int sockfd, std::string out_message) {
    int n;
    const char *out_buffer;
    //usleep(50000);
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-  // print_sent(out_message);
+   // print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
-   std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
    if (n<0)
       verbose("Error on write to buffer");
+}
 
+
+
+void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
+
+   std::this_thread::sleep_for(std::chrono::microseconds (500));
+   transmit_no_throttle(sockfd, out_message);
 }
 /*
 std::string NetworkCommunicator::receive(int sockfd) {

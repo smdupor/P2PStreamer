@@ -57,6 +57,7 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
       out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+ "\n\n";
       transmit(sockfd, out_message);
    }
+
       // Get back response
       in_message = receive(sockfd);
       std::vector<std::string> messages = split((const std::string &) in_message, '\n');
@@ -163,7 +164,7 @@ void P2PClient::parse_config(std::string config_file) {
          file.getline(buffer, 512);
          verbose(std::string(buffer));
          local_file = std::string(path_prefix + std::string(buffer));
-         error(local_file);
+        // error(local_file);
          files.push_back(FileEntry(stoi(std::string(buffer).substr(3,4)), hostname, cookie,
                                    local_file, true));
       }
@@ -268,6 +269,7 @@ void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 			// Add back the newline stripped by getline()
 				buffer[strlen(buffer)] = '\n';
 				transmit(sockfd,std::string(buffer));
+            std::this_thread::sleep_for(std::chrono::microseconds(500));
 				// Write the line to the socket
 			//	n = write(sockfd, buffer, strlen(buffer));
 				//if (n < 0)
@@ -407,7 +409,7 @@ void P2PClient::downloader() {
             while (bytes_written < end_length) {
                incoming_message = receive_no_delim(sockfd);
                output_file.write(incoming_message.c_str(), incoming_message.length());
-               error(incoming_message);
+              // error(incoming_message);
                bytes_written += incoming_message.length();
             }
             // Close the file and the connection.
@@ -446,9 +448,10 @@ void P2PClient::downloader() {
       if(system_wide_qty == files.size()) {
          error("SyswideQty Reached+ " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
                " Exiting Download Loop \n");
+         std::this_thread::sleep_for(std::chrono::seconds (3));
          sockfd = outgoing_connection(reg_serv, kControlPort);
          outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
-         transmit(sockfd, outgoing_message);
+         transmit_no_throttle(sockfd, outgoing_message);
          system_on=false;
          incoming_message = receive(sockfd);
          close(sockfd);
