@@ -56,7 +56,9 @@ std::vector<std::string> NetworkCommunicator::split(const std::string &input, ch
 	}
 
 	// Grab the last token indicated by no more delimiters found in string
-	split_string.push_back(input.substr(start));
+	if(!input.substr(start).empty()) {
+      split_string.push_back(input.substr(start));
+   }
 
 	return split_string;
 }
@@ -76,49 +78,86 @@ void NetworkCommunicator::ttl_decrementer() {
 void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
    int n;
    const char *out_buffer;
-
+   //usleep(50000);
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-   //print_sent(out_message);
+  // print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n<0)
       verbose("Error on write to buffer");
 
 }
-
+/*
 std::string NetworkCommunicator::receive(int sockfd) {
-   int n=0, timeout_counter=0;
-   char *in_buffer[MSG_LEN];
-   bzero(in_buffer, MSG_LEN);
+   int n=0, timeout_counter=0, bytes_imm=0, past_bytes_read=0;
+   char *in_buffer[1];
+   bzero(in_buffer, 1);
+   bool first_newline=false;
 
    std::string in_message = std::string("");
 
 	 // As long as data is coming in, keep reading.
-	 while(n >= 0 && timeout_counter < kTimeoutRetry){
-	 bzero(in_buffer, MSG_LEN);
-   n = read(sockfd, in_buffer, MSG_LEN);
+	 while(true){
+	 bzero(in_buffer, 1);
+   n = read(sockfd, in_buffer, 1);
 
    if(n<0)
       error("Error in reading socket");
-	 else if(n == 0) {
-		 usleep(kEmptyBufferSleep);
+	 else if(std::strlen((char *) in_buffer)==0) {
+		 std::this_thread::sleep_for(std::chrono::microseconds (kEmptyBufferSleep));
 		 timeout_counter += 1;
 	 }
-	 else {
-		 in_message += std::string((char *) in_buffer);
+	 else if(*in_buffer[0] == '\n' && !first_newline){
+      in_message += std::string((char *) in_buffer);
+      first_newline = true;
 	 }
-	 // If we determine that we've got the entire message
-	 if(in_message.substr(in_message.length() - 2) == "\n\n"){
-		 in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
+	 else if (*in_buffer[0] != '\n') {
+      in_message += std::string((char *) in_buffer);
+      first_newline = false;
+   }
+	 else if(*in_buffer[0] == '\n' && first_newline);
 		 return in_message;
 	 }
- }
-
-  // print_recv(in_message);
-  // We were unsuccessful, either the packet timed out, or was malformed and we are unable to continue.
-  return "";
 }
+*/
+
+std::string NetworkCommunicator::receive(int sockfd) {
+   int n=0, timeout_counter=0, bytes_imm=0, past_bytes_read=0;
+   char *in_buffer[MSG_LEN*2];
+   bzero(in_buffer, MSG_LEN*2);
+
+
+   std::string in_message = std::string("");
+
+   // As long as data is coming in, keep reading.
+   while(true){
+      bzero(in_buffer, MSG_LEN*2);
+      n = read(sockfd, in_buffer, MSG_LEN*2);
+
+      if(n<0)
+         error("Error in reading socket");
+      else if(std::strlen((char *) in_buffer)==0) {
+         std::this_thread::sleep_for(std::chrono::microseconds (kEmptyBufferSleep));
+         timeout_counter += 1;
+      }
+      else {
+         in_message += std::string((char *) in_buffer);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds (100));
+      // If we determine that we've got the entire message
+      if(!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n"){
+         print_recv(in_message);
+         in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
+         return in_message;
+      }
+   }
+
+   // print_recv(in_message);
+   // We were unsuccessful, either the packet timed out, or was malformed and we are unable to continue.
+   return "";
+}
+
 
 int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    struct sockaddr_in serv_addr;
@@ -147,7 +186,7 @@ int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    return sockfd;
 }
 
-/** DEBUG -- REMOVING */
+/** DEBUG -- REMOVING *//*
 std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
    int n;
    char *in_buffer[MSG_LEN];
@@ -163,16 +202,16 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
    in_message = std::string((char *) in_buffer);
    // print_recv(in_message);
    return in_message;
-}
+}*/
 
 std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    int n;
-   char *in_buffer[MSG_LEN];
-   bzero(in_buffer, MSG_LEN);
+   char *in_buffer[MSG_LEN*2];
+   bzero(in_buffer, MSG_LEN*2);
 
-   std::string in_message;
+   std::string in_message="";
 
-   n = read(sockfd, in_buffer, MSG_LEN);
+   n = read(sockfd, in_buffer, MSG_LEN*2);
    if(n<0)
       verbose("Error in reading socket, Called by:" + debug);
 

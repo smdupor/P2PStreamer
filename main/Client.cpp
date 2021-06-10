@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 
-   std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
-   keep_alive_thread.detach();
+   //std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+   //keep_alive_thread.detach();
 
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
    downloader_thread.detach();
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
       accept_thread.detach();
    }
 
-   keep_alive_thread.join();
+  // keep_alive_thread.join();
 
    std::cout << "*********************System is exiting successfully*********************\n";
 		return EXIT_SUCCESS;

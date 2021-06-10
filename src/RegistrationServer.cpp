@@ -66,82 +66,63 @@ int RegistrationServer::accept_reg(sockinfo sock){
 
 	// Initialize control variables and message strings
 	int n;
-	bool loop_control = true;
+
 	std::string in_message, out_message;
 
    in_message = receive(sock.socket);
- std::vector<std::string> messages = split((const std::string &) in_message, '\n');
+   std::vector<std::string> messages = split((const std::string &) in_message, '\n');
+   error("messages qty:" + std::to_string(messages.size()));
+
       for(std::string &message : messages) {
+         verbose(std::string(message + "Length: " + std::to_string(message.length())));
 		// Split the string by the delimiter so we can more easily use the message data
 		std::vector<std::string> tokens = split((const std::string &) message, ' ');
 
-		// Handle the message as appropriate
+		//Handle client registration
 		if(tokens[0] == kCliRegister) {	// First message when client wishes to register
 			if(tokens[1] == "NEW"){
 				// This is a new registration, handle it by adding the client and replying with ack
-				out_message = kCliRegAck + new_reg(tokens, sock)+"\n";
-            transmit(sock.socket, out_message);
-
-				// Now, reply with all other active members of the list
-            for(PeerNode &p : peers){
-               if(p.active()) {
-                  out_message = kPeerListItem + p.to_msg() + "\n";
-                  transmit(sock.socket, out_message);
-               }
-            }
-
-				// Finally, say "DONE" and close.
-				out_message = kDone + " \n\n";
-            transmit(sock.socket, out_message);
-            loop_control = false;
+				out_message = kCliRegAck + create_new_peer(sock);
 			}
 			else{
-				// tokens[1] Will contain the cookie
-				/////////////////////TODO///////////////////////
-
-				loop_control = false;
+				// This is a returning registration, and tokens[2] will contain the cookie.
+            PeerNode &pn = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
+               return node.equals(stoi(tokens[2]));});
+            pn.keepAlive();
+            pn.increment_reg_count();
+            out_message = kCliRegAck + pn.to_msg();
 			}
+         transmit(sock.socket, out_message);
+
+         // Now, reply with all other active members of the list
+         for(PeerNode &p : peers){
+            if(p.active()) {
+               out_message = kPeerListItem + p.to_msg();
+               transmit(sock.socket, out_message);
+            }
+         }
+
+         // Finally, say "DONE" and close.
+         out_message = kDone + " \n\n";
+         transmit(sock.socket, out_message);
 		}
 		else if(tokens[0] == kKeepAlive) { // This is a keepalive message
-			// tokens [1] will contain the cookie
-			/**************************************************************************STOPPING HERE AT @@@@@@@@@@@@@2pm
-			 * Need to FIND the node to be keptalive, and update it.
-			 */
+			// tokens [2] will contain the cookie
 
+			PeerNode &p = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
+			   return node.equals(stoi(tokens[2]));});
 
-			std::find(peers.begin(), peers.end(), [&](PeerNode node) {node.equals(stoi(tokens[1]))})
-
-			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {node.equals(stoi(tokens[1]))
-			   // Find correct node
-								if(node.equals(atoi(tokens[1].c_str()))){
-									// Update TTL
-								   node.keepAlive();
-								   //Reply to client
-									out_message = kDone + "\n";
-									out_buffer = out_message.c_str();
-									std::cout << out_message;
-									n = write(sock.socket, (const char *) out_buffer,
-											strlen((const char *) out_buffer));
-								}
-							});
-			loop_control = false;
+			p.keepAlive();
+			out_message = kDone + "\n\n";
+         transmit(sock.socket, out_message);
 		}
 		else if(tokens[0] == kLeave) { // Client is leaving the system
-			// tokens[1] will contain the cookie
-			std::for_each(peers.begin(), peers.end(), [&](PeerNode node) {
-			   // Find correct node
-								if(node.equals(atoi(tokens[1].c_str()))){
-								   // Update the node
-									node.leave();
-									// Reply to the client
-									out_message = kDone + "\n";
-									out_buffer = out_message.c_str();
-									std::cout << out_message;
-									n = write(sock.socket, (const char *) out_buffer,
-											strlen((const char *) out_buffer));
-								}
-							});
-			loop_control = false;
+			// tokens[2] will contain the cookie
+         PeerNode &p = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
+            return node.equals(stoi(tokens[2]));});
+			p.leave();
+			out_message = kDone + "\n\n";
+         transmit(sock.socket, out_message);
 		}
       else if(tokens[0] == kGetPeerList) { // Registered client wants the list of peers
          for(PeerNode p : peers) { //Transmit each
@@ -149,28 +130,28 @@ int RegistrationServer::accept_reg(sockinfo sock){
             transmit(sock.socket, out_message);
          }
          //Transmit done and exit loop.
-         out_message = kDone + " \n";
+         out_message = kDone + " \n\n";
          transmit(sock.socket, out_message);
-         loop_control = false;
       }
-		else if(tokens[0] == ""){ // Empty buffer
+		/*else if(tokens[0] == ""){ // Empty buffer
 			if(timeout_counter > 10000)
 			   loop_control = false;
 		   usleep(100);
 		   ++timeout_counter;
-		}
+		}*/
 		else {
-			verbose("We received an invalid message. Dropping connection.");
-			loop_control = false;
+			error("We received an invalid message. Dropping connection.");
 		}
-	} //while(1)
+	} //foreach
 
 	// Loop has exited; we are done, close socket
-	close(sock.socket);
+	//close(sock.socket);
+	// Let client close socket.
+	//////////////////TODO Change return type
 	return 0;
 }
 
-std::string RegistrationServer::new_reg(std::vector<std::string> tokens, sockinfo sock) {
+std::string RegistrationServer::create_new_peer(sockinfo sock) {
 	//create a new peernode for the new registrant
 	PeerNode p = PeerNode(std::string(sock.cli_addr), latest_cookie, kControlPort+latest_cookie);
 	++latest_cookie;

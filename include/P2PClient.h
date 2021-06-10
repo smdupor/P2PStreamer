@@ -38,18 +38,18 @@ class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
    std::string hostname, path_prefix;
-   int ttl, cookie, port, timeout_counter;
+   int ttl, cookie, timeout_counter;
    int expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
    bool system_on;
 
    void get_peer_list(int sockfd, bool registration);
 
-   int outgoing_connection(std::string hostname, int port);
+   //int outgoing_connection(std::string hostname, int port);
    void parse_config(std::string config_file);
    void check_files();
    void transmit_file(int sockfd, FileEntry &file);
-   void download_file();
+
 
 public:
    P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
@@ -61,6 +61,7 @@ public:
    void accept_download_request(int sockfd);
    void debug_print_hosts_and_files();
    void downloader();
+   void download_file();
    bool get_system_on();
 };
 

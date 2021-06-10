@@ -13,7 +13,8 @@ class FileEntry {
 private:
    bool local;
    bool lock;
-   const char *path;
+   //const char *path;
+   std::string path;
    int length, id, cookie;
    std::string hostname;
 

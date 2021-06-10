@@ -2,6 +2,7 @@
 // Created by smdupor on 6/4/21.
 //
 
+#include <ctime>
 #include "FileEntry.h"
 
 FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local){
@@ -9,7 +10,7 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
-   this->path = (const char *) path.c_str();
+   this->path = path;
    this->local = local;
    lock = false;
    length = 0;
@@ -26,7 +27,7 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path)
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
-   this->path = (const char *) path.c_str();
+   this->path = path;
    local = true;
    lock = false;
 }
@@ -80,6 +81,8 @@ std::string FileEntry::to_s() {
 
 std::string FileEntry::to_msg() {
    return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
+
+   ///////////////////TODO Remove CTIME include
 }
 
 bool FileEntry::equals(int id, int cookie){

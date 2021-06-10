@@ -21,11 +21,12 @@ private:
 	bool activeNow;
 	int TTL;
 	int port;
-	int countActive;
+	int reg_count;
 	time_t timeReg;
 	int dead_count;
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
+   bool lock_access;
 
 public:
 	PeerNode(std::string hostname, int cookie, int port); // Used on the registration server
@@ -41,6 +42,10 @@ public:
 	void set_inactive();
 	void report_down();
 	void reset_down();
+	void increment_reg_count();
+	bool locked();
+	void lock();
+	void unlock();
 
 	// Getters
    bool active();
@@ -49,6 +54,7 @@ public:
 	bool equals(int);
 	std::string get_address();
 	int get_port();
+
 
 };
 

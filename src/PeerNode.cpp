@@ -11,19 +11,22 @@
 #include <constants.h>
 #include "PeerNode.h"
 
-//Constructor for a PeerNode which has not previously registered for the system
+//Regserv
+// Constructor for a PeerNode which has not previously registered for the system
 PeerNode::PeerNode(std::string hostname, int cookie, int port) {
 	this -> hostname = hostname;
 	this -> cookie = cookie;
 	this -> port = port;
 	activeNow = true;
-	countActive = 0;
+	reg_count = 1;
 	timeReg =  std::time(nullptr);
 	TTL=7200;
 	dead_count = 0;
+	lock_access = false;
 }
 
-//Constructor for a PeerNode which has not previously registered for the system
+//Constructor for PeerNodes that is used by the P2P clients system. registration time and count are not used, and set
+//to null.
 PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
    this -> hostname = hostname;
    this -> cookie = cookie;
@@ -31,6 +34,9 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
    activeNow = true;
    TTL=ttl;
    dead_count = 0;
+   timeReg = NULL;
+   reg_count = NULL;
+   lock_access = false;
 }
 
 //To_string functionality
@@ -141,6 +147,10 @@ std::string PeerNode::get_address() {
    return hostname;
 }
 
+void PeerNode::increment_reg_count() {
+   this->reg_count += 1;
+}
+
 void PeerNode::decTTL(int seconds) {
    TTL -= seconds;
    if (TTL <0)
@@ -162,4 +172,16 @@ void PeerNode::report_down(){
 void PeerNode::reset_down() {
    dead_count = 0;
    activeNow = true;
+}
+
+bool PeerNode::locked(){
+   return lock_access;
+}
+
+void PeerNode::lock() {
+   lock_access = true;
+}
+
+void PeerNode::unlock() {
+   lock_access = false;
 }

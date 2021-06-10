@@ -33,7 +33,7 @@ class RegistrationServer: public NetworkCommunicator  {
 private:
 	int latest_cookie;
 	int accept_reg(sockinfo sock);
-	std::string new_reg(std::vector<std::string> tokens, sockinfo sock);
+	std::string create_new_peer(sockinfo sock);
 
 public:
 	RegistrationServer(std::string logfile, bool verbose_debug);

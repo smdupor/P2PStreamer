@@ -69,7 +69,7 @@ protected:
    void transmit(int sockfd, std::string &out_message);
    std::string receive(int sockfd);
 	 int outgoing_connection(std::string hostname, int port);
-   std::string receive(int sockfd, std::string debug);
+   //std::string receive(int sockfd, std::string debug);
    std::string receive_no_delim(int sockfd);
    //char *receive_cstr(int sockfd);
    void print_sent(std::string input);
