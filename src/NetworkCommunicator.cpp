@@ -75,7 +75,7 @@ void NetworkCommunicator::ttl_decrementer() {
 	//Override in subclasses
 }
 
-void NetworkCommunicator::transmit_no_throttle(int sockfd, std::string out_message) {
+void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
    int n;
    const char *out_buffer;
    //usleep(50000);
@@ -90,10 +90,11 @@ void NetworkCommunicator::transmit_no_throttle(int sockfd, std::string out_messa
 
 
 
-void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
+void NetworkCommunicator::transmit(int sockfd, std::string out_message, int throttle_delay_us) {
 
-   std::this_thread::sleep_for(std::chrono::microseconds (500));
-   transmit_no_throttle(sockfd, out_message);
+   std::this_thread::sleep_for(std::chrono::microseconds(throttle_delay_us));
+   transmit(sockfd, out_message);
+
 }
 /*
 std::string NetworkCommunicator::receive(int sockfd) {
@@ -162,12 +163,43 @@ std::string NetworkCommunicator::receive(int sockfd) {
       }
    }
 
+
    // print_recv(in_message);
    // We were unsuccessful, either the packet timed out, or was malformed and we are unable to continue.
    return "";
 }
 
+std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
+   int n = 0, timeout_counter = 0, bytes_imm = 0, past_bytes_read = 0;
+   char *in_buffer[MSG_LEN * 2];
+   bzero(in_buffer, MSG_LEN * 2);
 
+
+   std::string in_message = std::string("");
+
+   // As long as data is coming in, keep reading.
+   while (true) {
+      bzero(in_buffer, MSG_LEN * 2);
+      n = read(sockfd, in_buffer, MSG_LEN * 2);
+
+      if (n < 0) {
+         error("Error in reading socket: " + debug_loc);
+         return kDone + " \n";
+      } else if (std::strlen((char *) in_buffer) == 0) {
+         std::this_thread::sleep_for(std::chrono::microseconds(kEmptyBufferSleep));
+         timeout_counter += 1;
+      } else {
+         in_message += std::string((char *) in_buffer);
+      }
+      // std::this_thread::sleep_for(std::chrono::milliseconds (100));
+      // If we determine that we've got the entire message
+      if (!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n") {
+         // print_recv(in_message);
+         in_message = in_message.substr(0, in_message.length() - 1); // Strip the extra newline
+         return in_message;
+      }
+   }
+}
 int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    struct sockaddr_in serv_addr;
    struct hostent *server;
@@ -213,7 +245,7 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
    return in_message;
 }*/
 
-std::string NetworkCommunicator::receive_no_delim(int sockfd) {
+std::string NetworkCommunicator::receive_no_delim(int sockfd, std::string debug) {
    int n;
    char *in_buffer[MSG_LEN*2];
    bzero(in_buffer, MSG_LEN*2);

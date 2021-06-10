@@ -16,6 +16,7 @@ RegistrationServer::RegistrationServer(std::string logfile, bool verbose_debug) 
 	port = kControlPort;
 	debug = verbose_debug;
 	start_time = (const time_t) std::time(nullptr);
+	reverse = true;
 }
 
 RegistrationServer::~RegistrationServer() {
@@ -95,11 +96,22 @@ int RegistrationServer::accept_reg(sockinfo sock){
          transmit(sock.socket, out_message);
 
          // Now, reply with all other active members of the list
+         if(reverse) {
+            for(std::list<PeerNode>::reverse_iterator rit=peers.rbegin(); rit!=peers.rend(); ++rit)
+            {
+               if(rit -> active()) {
+                  out_message = kPeerListItem + rit->to_msg();
+                  transmit(sock.socket, out_message);
+               }
+            }
+            reverse = false;
+         }
          for(PeerNode &p : peers){
             if(p.active()) {
                out_message = kPeerListItem + p.to_msg();
                transmit(sock.socket, out_message);
             }
+            reverse = true;
          }
 
          // Finally, say "DONE" and close.

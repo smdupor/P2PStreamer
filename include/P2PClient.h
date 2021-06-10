@@ -34,6 +34,17 @@
 #include "PeerNode.h"
 #include "FileEntry.h"
 
+struct LogItem {
+   LogItem(int qty) {
+         this->qty = qty;
+         this->time = std::chrono::high_resolution_clock::now();
+         //#define duration(a) std::chrono::duration_cast<std::chrono::nanoseconds>(a).count()
+         //#define timeNow() std::chrono::high_resolution_clock::now()
+   }
+   std::chrono::high_resolution_clock::time_point time;
+   int qty;
+};
+
 class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
@@ -42,6 +53,7 @@ private:
    int expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
    bool system_on;
+   std::list<LogItem> logs;
 
    void get_peer_list(int sockfd, bool registration);
 
@@ -49,6 +61,7 @@ private:
    void parse_config(std::string config_file);
    void check_files();
    void transmit_file(int sockfd, FileEntry &file);
+
 
 
 public:

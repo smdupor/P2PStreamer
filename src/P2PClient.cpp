@@ -37,6 +37,7 @@ void P2PClient::start(std::string config_file) {
    // Load our configuration file to set up the local files in our distributed DB
    parse_config(config_file);
    check_files();
+   //logs.emplace_back(LogItem(local_qty));
 }
 
 void P2PClient::get_peer_list(int sockfd, bool registration) {
@@ -59,12 +60,14 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
    }
 
       // Get back response
-      in_message = receive(sockfd);
+      in_message = receive(sockfd, "line 62");
       std::vector<std::string> messages = split((const std::string &) in_message, '\n');
       // Split buffer into individual messages
       for (std::string &message : messages) {
          // Split into tokens
          std::vector<std::string> tokens = split((const std::string &) message, ' ');
+
+         std::chrono::high_resolution_clock();
 
          if (tokens[0] == kCliRegAck) { // Welcome to system, here is your ID info
             hostname = tokens[2];
@@ -113,7 +116,7 @@ void P2PClient::keep_alive() {
       sockfd = outgoing_connection(reg_serv, kControlPort);
 			if (sockfd > 0) {
       std::string outgoing_message = kKeepAlive + " Cookie: " + std::to_string(cookie) + " \n\n";
-			std::string incoming_message = receive(sockfd); // swallow the ack
+			std::string incoming_message = receive(sockfd, "line 116"); // swallow the ack
       close(sockfd);
 			timeout_counter = 0;
 		}
@@ -214,9 +217,10 @@ void P2PClient::accept_download_request(int sockfd){
    std::vector<std::string> messages, tokens;
 
    bool loop_control = true;
-
+    //  std::this_thread::sleep_for(std::chrono::microseconds(500));
    // Start by passing along the distributed database
-      in_message = receive(sockfd);
+   std::this_thread::sleep_for(std::chrono::microseconds(500));
+      in_message = receive(sockfd, "line 219");
 
       // If we got a timeout condition
       if(in_message.length() == 0){
@@ -241,7 +245,7 @@ void P2PClient::accept_download_request(int sockfd){
                transmit(sockfd, out_message);
             }
             out_message = kDone + " \n\n";
-            transmit(sockfd, out_message);
+            transmit(sockfd, out_message,500);
             loop_control = false;
          }
          else if (tokens[0] == kGetFile) {
@@ -268,8 +272,8 @@ void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 	while(infile.getline(buffer,MSG_LEN*2)){
 			// Add back the newline stripped by getline()
 				buffer[strlen(buffer)] = '\n';
-				transmit(sockfd,std::string(buffer));
-            std::this_thread::sleep_for(std::chrono::microseconds(500));
+				transmit(sockfd,std::string(buffer),500);
+            //std::this_thread::sleep_for(std::chrono::microseconds(500));
 				// Write the line to the socket
 			//	n = write(sockfd, buffer, strlen(buffer));
 				//if (n < 0)
@@ -307,7 +311,8 @@ void P2PClient::downloader() {
            int sockfd = outgoing_connection(p.get_address(), p.get_port());
             if (sockfd > 0) {
                outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
-               transmit(sockfd, outgoing_message);
+               transmit(sockfd, outgoing_message,500);
+
                bool done = false;
                /*while (!done) {
 
@@ -315,7 +320,7 @@ void P2PClient::downloader() {
                          incoming_message.substr(incoming_message.length() - 1) != "\n") {
                      incoming_message += receive(sockfd, "Line357");
                   }*/
-               incoming_message = receive(sockfd);
+               incoming_message = receive(sockfd, "Line318");
                   messages = split(incoming_message, '\n');
                   for (std::string &message : messages) {
                      tokens = split(message, ' ');
@@ -388,7 +393,7 @@ void P2PClient::downloader() {
          transmit(sockfd, outgoing_message);
 
          //get the control packet that tells us the lengths
-         incoming_message = receive_no_delim(sockfd);
+         incoming_message = receive_no_delim(sockfd, "line391");
          messages = split(incoming_message, '\n');
          if(messages[0].length() > 0) {
             tokens = split(messages[0], ' ');
@@ -407,7 +412,7 @@ void P2PClient::downloader() {
 
             // Continue to get file data and write to file until we have the entire file
             while (bytes_written < end_length) {
-               incoming_message = receive_no_delim(sockfd);
+               incoming_message = receive_no_delim(sockfd, "line 410");
                output_file.write(incoming_message.c_str(), incoming_message.length());
               // error(incoming_message);
                bytes_written += incoming_message.length();
@@ -422,6 +427,7 @@ void P2PClient::downloader() {
 
             // Update our quantities
             ++local_qty;
+           // logs.emplace_back(LogItem(local_qty));
             //print_recv("I now have this many files: " + std::to_string(local_qty));
             // Check through the database and mark any entries of this file as also-locally-available.
             for (FileEntry &f : files) {
@@ -449,11 +455,20 @@ void P2PClient::downloader() {
          error("SyswideQty Reached+ " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
                " Exiting Download Loop \n");
          std::this_thread::sleep_for(std::chrono::seconds (3));
+
+         // Dump the logfile
+        /* LogItem t = *logs.begin();
+         std::cout << "COLUMN QTY,         COLUMN WTF\n";
+         for(LogItem &l : logs) {
+            std::cout << std::to_string(l.qty) << ", " <<
+               std::to_string(std::chrono::duration_cast<std::chrono::nanoseconds>(l.time - t.time).count()) << "\n";
+         }*/
+
          sockfd = outgoing_connection(reg_serv, kControlPort);
          outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
-         transmit_no_throttle(sockfd, outgoing_message);
+         transmit(sockfd, outgoing_message);
          system_on=false;
-         incoming_message = receive(sockfd);
+         incoming_message = receive(sockfd, "line456");
          close(sockfd);
       }
 
@@ -486,7 +501,7 @@ void P2PClient::downloader() {
       transmit(sockfd, outgoing_message);
 
          //get the control packet that tells us the lengths
-         incoming_message = receive_no_delim(sockfd);
+         incoming_message = receive_no_delim(sockfd, "line489");
          messages = split(incoming_message, '\n');
          if(messages[0].length() > 0) {
             tokens = split(messages[0], ' ');
@@ -505,7 +520,7 @@ void P2PClient::downloader() {
             }
 
             while (bytes_written < end_length) {
-               incoming_message = receive_no_delim(sockfd);
+               incoming_message = receive_no_delim(sockfd, "line508");
                output_file.write(incoming_message.c_str(), incoming_message.length());
                //error(incoming_message);
                bytes_written += incoming_message.length();

@@ -34,6 +34,7 @@ private:
 	int latest_cookie;
 	int accept_reg(sockinfo sock);
 	std::string create_new_peer(sockinfo sock);
+	bool reverse;
 
 public:
 	RegistrationServer(std::string logfile, bool verbose_debug);

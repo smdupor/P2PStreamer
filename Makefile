@@ -29,6 +29,8 @@ all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
 	@echo "BUILD SUCCESSFUL; CLEANING OBJECT FILES"
 	rm -f obj/lib/*.o
 	rm -f obj/exe/*.o
+	scp -r bin/ 192.168.1.145:~/P2PStreamer/
+	scp -r bin/ 192.168.1.31:~/P2PStreamer/
 	@echo "****************************************************************************"
 	@echo "DONE. Start server using ./bin/RegServ , then start clients with ./bin/Client"
 	@echo "****************************************************************************"

@@ -67,11 +67,11 @@ protected:
 	virtual void ttl_decrementer();
 	std::vector<std::string> split(const std::string &input, char delim);
    void transmit(int sockfd, std::string out_message);
-   void transmit_no_throttle(int sockfd, std::string out_message);
+   void transmit(int sockfd, std::string out_message, int throttle_delay_us);
    std::string receive(int sockfd);
-	 int outgoing_connection(std::string hostname, int port);
-   //std::string receive(int sockfd, std::string debug);
-   std::string receive_no_delim(int sockfd);
+   int outgoing_connection(std::string hostname, int port);
+   std::string receive(int sockfd, std::string debug_loc);
+   std::string receive_no_delim(int sockfd, std::string debug);
    //char *receive_cstr(int sockfd);
    void print_sent(std::string input);
    void print_recv(std::string input);

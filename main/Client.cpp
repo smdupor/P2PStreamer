@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
 
    while(client.get_system_on()){
       newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
+      std::this_thread::sleep_for(std::chrono::microseconds(500));
       std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
       accept_thread.detach();
    }
