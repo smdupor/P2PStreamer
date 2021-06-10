@@ -79,6 +79,25 @@ std::string FileEntry::to_s() {
 
 }
 
+bool FileEntry::equals(PeerNode &p) {
+   if(p.get_cookie() == this->cookie) {
+      return true;
+   }
+   return false;
+}
+
+bool FileEntry::is_active() {
+   return active;
+}
+
+void FileEntry::set_inactive() {
+   active = false;
+}
+
+void FileEntry::set_active() {
+   active = true;
+}
+
 std::string FileEntry::to_msg() {
    return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
 

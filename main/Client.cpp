@@ -18,10 +18,14 @@ int main(int argc, char *argv[]) {
 
    std::vector<std::unique_ptr<std::thread>> threads;
 
-	std::string server_id;
+   if(argc != 3)
+      return EXIT_FAILURE;
 
+   char choose = argv[1][0];
+   std::string server_id = std::string(argv[2]);
+/*
    std::cout << "Enter Server ID ('0' for localhost): ";
-   std::cin >> server_id;
+   std::cin >> server_id;*/
    if(server_id.length()==1)
       server_id = "localhost";
 
@@ -29,11 +33,6 @@ int main(int argc, char *argv[]) {
 
    //std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
    //std::cin >> choose;
-
-   if(argc != 2)
-      return EXIT_FAILURE;
-
-   char choose = argv[1][0];
 
    std::cout << "Starting Client with Code:   " << choose<<"   \n";
 
@@ -53,8 +52,8 @@ int main(int argc, char *argv[]) {
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
 
-   //std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
-   //keep_alive_thread.detach();
+   std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
+   keep_alive_thread.detach();
 
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
    downloader_thread.detach();

@@ -35,7 +35,7 @@ int NetworkCommunicator::listener(int listen_port) {
 
    // Listen for new connections
    verbose("LISTENING FOR CONNECTIONS on port: " + std::to_string(listen_port));
-   listen(sockfd,10);
+   listen(sockfd,12);
    clilen = sizeof(cli_addr);
    return sockfd;
 }
@@ -81,9 +81,9 @@ void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
    //usleep(50000);
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-   print_sent(out_message);
+  // print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
-
+   std::this_thread::sleep_for(std::chrono::milliseconds(10));
    if (n<0)
       verbose("Error on write to buffer");
 
@@ -135,8 +135,10 @@ std::string NetworkCommunicator::receive(int sockfd) {
       bzero(in_buffer, MSG_LEN*2);
       n = read(sockfd, in_buffer, MSG_LEN*2);
 
-      if(n<0)
-         error("Error in reading socket");
+      if(n<0) {
+        error("Error in reading socket");
+        return kDone + " \n";
+      }
       else if(std::strlen((char *) in_buffer)==0) {
          std::this_thread::sleep_for(std::chrono::microseconds (kEmptyBufferSleep));
          timeout_counter += 1;
@@ -144,10 +146,10 @@ std::string NetworkCommunicator::receive(int sockfd) {
       else {
          in_message += std::string((char *) in_buffer);
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds (100));
+     // std::this_thread::sleep_for(std::chrono::milliseconds (100));
       // If we determine that we've got the entire message
       if(!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n"){
-         print_recv(in_message);
+        // print_recv(in_message);
          in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
          return in_message;
       }

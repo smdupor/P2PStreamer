@@ -121,6 +121,9 @@ int RegistrationServer::accept_reg(sockinfo sock){
          PeerNode &p = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
             return node.equals(stoi(tokens[2]));});
 			p.leave();
+			error(p.toS() + " Is Leaving\n");
+         int killsockfd = outgoing_connection(p.get_address(), p.get_port());
+         close(killsockfd);
 			out_message = kDone + "\n\n";
          transmit(sock.socket, out_message);
 		}

@@ -43,6 +43,8 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
    // Initialize control variables and message strings
    bool loop_control = true;
    std::string in_message, out_message;
+   // Reset registration keepalive counter
+   timeout_counter = 0;
 
    if(registration && cookie == -1){ // This is a new registration
       out_message = kCliRegister + " NEW \n\n";
@@ -82,8 +84,13 @@ void P2PClient::get_peer_list(int sockfd, bool registration) {
                   lock = false;
                } else if (tokens[10] == "TRUE") { // We have it, and it's active
                      /////////////For now, we are going to prefer our own recognizance that the host is indeed down.
-                  //p->set_active(stoi(tokens[8]));
-               } else { // We have it, but it's inactive according to the registration server
+                  p->set_active(stoi(tokens[8]));
+               } else if(tokens[10] == "FALSE") { // We have it, and it's inactive
+                  p->set_inactive();
+                  // Drop its files from the database
+                  files.remove_if([&](FileEntry f) {return f.equals(*p);});
+               }
+               else { // We have it, but it's inactive according to the registration server
                   p->set_inactive();
                }
             } //if(cookie != me)
@@ -252,7 +259,7 @@ void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
    std::ifstream infile(want_file.get_path());
 	out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " "+"\n";
 	transmit(sockfd, out_message);
-   std::this_thread::sleep_for(std::chrono::seconds(2));
+   //std::this_thread::sleep_for(std::chrono::seconds(2));
 	// Use C-Style IO to write data to the socket.
 	char buffer[MSG_LEN*2];
 	int n=0;
@@ -285,7 +292,7 @@ void P2PClient::downloader() {
    bool picked_file = false;
 
    // Run Downloads as long as we don't have all the files we want
-   while (expected_qty > local_qty) {
+   while (system_on) {
       past_local_qty = local_qty;
       // Contact the registration server and get the list of peers
      int sockfd = outgoing_connection(reg_serv, kControlPort);
@@ -434,9 +441,19 @@ void P2PClient::downloader() {
        } else {
          slowdown = 1;
       }
-			if(system_on == false) {
-				/////////TODO: Connect to listener then leave
-			}
+      error("SyswideQty " + std::to_string(system_wide_qty) + " DB SIze:" + std::to_string(files.size()) +
+             " \n");
+      if(system_wide_qty == files.size()) {
+         error("SyswideQty Reached+ " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
+               " Exiting Download Loop \n");
+         sockfd = outgoing_connection(reg_serv, kControlPort);
+         outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
+         transmit(sockfd, outgoing_message);
+         system_on=false;
+         incoming_message = receive(sockfd);
+         close(sockfd);
+      }
+
    }
 }
 
@@ -487,7 +504,7 @@ void P2PClient::downloader() {
             while (bytes_written < end_length) {
                incoming_message = receive_no_delim(sockfd);
                output_file.write(incoming_message.c_str(), incoming_message.length());
-               error(incoming_message);
+               //error(incoming_message);
                bytes_written += incoming_message.length();
             }
             // Close the file and the connection.
@@ -500,7 +517,7 @@ void P2PClient::downloader() {
 
             // Update our quantities
             ++local_qty;
-            print_recv("I now have this many files: " + std::to_string(local_qty));
+            print_recv("I now have this many files: " + std::to_string(local_qty) + "\n");
             // Check through the database and mark any entries of this file as also-locally-available.
             for (FileEntry &f : files) {
                if (f.get_id() == want_file->get_id()) {

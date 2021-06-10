@@ -54,6 +54,7 @@ public:
 	bool equals(int);
 	std::string get_address();
 	int get_port();
+	int get_cookie();
 
 
 };

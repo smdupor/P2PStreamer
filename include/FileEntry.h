@@ -9,9 +9,12 @@
 #include <fstream>
 #include <cstring>
 
+#include "PeerNode.h"
+
 class FileEntry {
 private:
    bool local;
+   bool active;
    bool lock;
    //const char *path;
    std::string path;
@@ -32,7 +35,11 @@ public:
    std::string to_msg();
    bool equals(int id, int cookie);
    bool equals (int id);
+   bool equals (PeerNode &p);
    bool is_local();
+   bool is_active();
+   void set_inactive();
+   void set_active();
 
 
 

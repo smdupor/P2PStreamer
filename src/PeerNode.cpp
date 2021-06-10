@@ -119,6 +119,10 @@ void PeerNode::leave() {
 	TTL = 0;
 }
 
+int PeerNode::get_cookie() {
+   return cookie;
+}
+
 bool PeerNode::equals(PeerNode * other) {
 	if(this->cookie != other->cookie)
 		return false;
