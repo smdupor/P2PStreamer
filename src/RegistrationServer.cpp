@@ -16,7 +16,8 @@ RegistrationServer::RegistrationServer(std::string logfile, bool verbose_debug) 
 	port = kControlPort;
 	debug = verbose_debug;
 	start_time = (const time_t) std::time(nullptr);
-	reverse = true;
+	reverse = false;
+	system_on = true;
 }
 
 RegistrationServer::~RegistrationServer() {
@@ -24,7 +25,7 @@ RegistrationServer::~RegistrationServer() {
 }
 
 // Starts the registration server, creates a socket and listens/accepts/handles new connections
-int RegistrationServer::start(){
+void RegistrationServer::start(){
 	int sockfd; // socket descriptor
 	socklen_t clilen; //client length
 	struct sockaddr_in serv_addr, cli_addr; //socket addresses
@@ -35,7 +36,7 @@ int RegistrationServer::start(){
 	clilen = sizeof(cli_addr);
 
 	// Loop continuously to accept new connections
-	while(1){
+	while(system_on){
 
 		//accept the connection
 		accepted_socket.socket = (int) accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
@@ -46,17 +47,19 @@ int RegistrationServer::start(){
 		accepted_socket.cli_addr = new char[INET_ADDRSTRLEN];
 		inet_ntop( AF_INET, &ipAddr, accepted_socket.cli_addr, INET_ADDRSTRLEN );
 
-		// Handle the incoming request
+		if(system_on){		// Handle the incoming request
 		accept_reg(accepted_socket);
+		}
 
 		if (accepted_socket.socket < 0){
 			verbose("Error on accepting connection");
-			return -1;
 		}
 		//Let client close the conn
 		// close(accepted_socket.socket);
 	}
-	return 1;
+
+	close(sockfd);
+	std::this_thread::sleep_for(std::chrono::seconds(2));
 }
 
 int RegistrationServer::accept_reg(sockinfo sock){
@@ -138,6 +141,15 @@ int RegistrationServer::accept_reg(sockinfo sock){
          close(killsockfd);
 			out_message = kDone + "\n\n";
          transmit(sock.socket, out_message);
+
+         // Shutdown the reg serv if experiment is over & everyone is gone.
+         if(!std::any_of(peers.begin(), peers.end(), [&](PeerNode &p){return p.active();})){
+            system_on = false;
+            /*int selfkillsockfd = outgoing_connection("localhost", this->port);
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+            close(selfkillsockfd);*/
+            return 1;
+         }
 		}
       else if(tokens[0] == kGetPeerList) { // Registered client wants the list of peers
          for(PeerNode p : peers) { //Transmit each
@@ -148,12 +160,6 @@ int RegistrationServer::accept_reg(sockinfo sock){
          out_message = kDone + " \n\n";
          transmit(sock.socket, out_message);
       }
-		/*else if(tokens[0] == ""){ // Empty buffer
-			if(timeout_counter > 10000)
-			   loop_control = false;
-		   usleep(100);
-		   ++timeout_counter;
-		}*/
 		else {
 			error("We received an invalid message. Dropping connection.");
 		}
@@ -180,14 +186,19 @@ std::string RegistrationServer::create_new_peer(sockinfo sock) {
 
 void RegistrationServer::ttl_decrementer() {
    int seconds = kTTLDec;
-
-	while(1) {
-	   sleep(seconds);
-	   std::cout << "Sleeping for " << seconds << "in timeout func\n";
-	   for(PeerNode &p : peers){
-         p.decTTL(seconds);
-         std::cout << p.toS()<<"\n";
-	   }
+   int temp = 0;
+	while(system_on) {
+	   if(temp < seconds){
+	      ++temp;
+	      std::this_thread::sleep_for(std::chrono::seconds(1));
+	   } else {
+         std::cout << "TTL Decrementation \n";
+         for (PeerNode &p : peers) {
+            p.decTTL(seconds);
+            std::cout << p.toS() << "\n";
+         }
+         temp = 0;
+      }
 	}
 
 }

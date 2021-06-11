@@ -29,6 +29,10 @@ all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
 	@echo "BUILD SUCCESSFUL; CLEANING OBJECT FILES"
 	rm -f obj/lib/*.o
 	rm -f obj/exe/*.o
+	ssh 192.168.1.145 rm ~/P2PStreamer/bin/*
+ 	#ssh 192.168.1.145 rm ~/P2PStreamer/logs/*.csv
+	ssh 192.168.1.31 rm ~/P2PStreamer/bin/*
+	#ssh 192.168.1.131 rm ~/P2PStreamer/logs/*.csv'
 	scp -r bin/ 192.168.1.145:~/P2PStreamer/
 	scp -r bin/ 192.168.1.31:~/P2PStreamer/
 	@echo "****************************************************************************"

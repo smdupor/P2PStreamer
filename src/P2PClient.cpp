@@ -34,6 +34,7 @@ bool P2PClient::get_system_on(){
 void P2PClient::start(std::string config_file) {
    // Connect to the Registration Server and Register
    int sockfd = outgoing_connection(reg_serv, kControlPort);
+
    get_peer_list(sockfd, true);
 
    // Load our configuration file to set up the local files in our distributed DB
@@ -480,7 +481,7 @@ void P2PClient::downloader() {
          // Dump the logfile
          LogItem t = *logs.begin();
          std::ofstream dmp(this->log);
-         outgoing_message = "Qty, t";
+         outgoing_message = "Qty, t\n";
          verbose(outgoing_message);
          dmp.write(outgoing_message.c_str(), outgoing_message.length());
 

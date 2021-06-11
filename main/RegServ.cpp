@@ -11,10 +11,17 @@
 
 int main(void) {
 	RegistrationServer server = RegistrationServer("NoLogFile.txt", true);
-   std::vector<std::unique_ptr<std::thread>> threads;
 
-   std::thread ttl_decrementer = std::thread(&RegistrationServer::ttl_decrementer, &server);
-	server.start();
+
+   std::thread ttl_dec_thread = std::thread(&RegistrationServer::ttl_decrementer, &server);
+   ttl_dec_thread.detach();
+
+   server.start();
+	//std::thread serv_thread(&RegistrationServer::start, &server);
+	//serv_thread.detach();
+
+	//ttl_dec_thread.join();
+	std::cout << "All Hosts are gone; Exit clean/success.";
 
 	return EXIT_SUCCESS;
 }

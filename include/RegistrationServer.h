@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <cstring>
 #include <vector>
+#include <thread>
+
 
 #include <string.h>
 #include <stdio.h>
@@ -35,11 +37,12 @@ private:
 	int accept_reg(sockinfo sock);
 	std::string create_new_peer(sockinfo sock);
 	bool reverse;
+	bool system_on;
 
 public:
 	RegistrationServer(std::string logfile, bool verbose_debug);
 	virtual ~RegistrationServer();
-	int start();
+	void start();
 	void ttl_decrementer();
 };
 
