@@ -14,7 +14,7 @@ for file in all_files:
 
 plt.xlabel("Elapsed Time (ms)")
 plt.ylabel("Number of Files Downloaded")
-plt.title("Time Results for Experiment " + sys.argv[1])
+plt.title("Experiment 2 Results: Round-Robin Enabled on Dist DB " + sys.argv[1])
 plt.legend()
 plt.show()
 outFname = sys.argv[1]+".png"

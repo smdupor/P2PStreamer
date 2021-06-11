@@ -10,7 +10,7 @@
 #include "NetworkCommunicator.h"
 #include "P2PClient.h"
 
-std::mutex downloader_lock;
+std::mutex downloader_lock, files_lock;
 
 P2PClient::P2PClient(std::string addr_reg_serv, std::string logfile, bool verbose) {
 	reg_serv = (const char *) addr_reg_serv.c_str();
@@ -132,6 +132,7 @@ void P2PClient::keep_alive() {
 
 void P2PClient::parse_config(std::string config_file) {
    downloader_lock.lock();
+   files_lock.lock();
    char buffer[512];
    std::vector<std::string> tokens;
    std::string local_file;
@@ -206,6 +207,7 @@ void P2PClient::check_files(){
     //  verbose("Checked File: " + file.get_path() + " Length: " + std::to_string(bytecount));
    }
    downloader_lock.unlock();
+   files_lock.unlock();
 }
 
 void P2PClient::debug_print_hosts_and_files(){
@@ -248,6 +250,7 @@ void P2PClient::accept_download_request(int sockfd){
          // Client is requesting the index
          if (tokens[0] == kGetIndex) {
             int temp_cookie = stoi(tokens[2]);
+
             for(FileEntry &file : files){
                out_message = kIndexItem + file.to_msg();
                transmit(sockfd, out_message);
@@ -317,6 +320,12 @@ void P2PClient::downloader() {
       get_peer_list(sockfd, false);
       close(sockfd);
       downloader_lock.lock();
+
+      // Round robin the peer list to spread load
+      if(rand() % 10 > 4) {
+         peers.reverse();
+      }
+
 
       // Contact all the peers and get their distributed databases
       for (PeerNode &p : peers) {
@@ -391,12 +400,16 @@ void P2PClient::downloader() {
             p.report_down(); }
          } //for
 
-         //download_file();
+         // Find the first file in our list that we want.
 
-      // Pick a file, and ask to download it
-      auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
-         return !f.is_local() && !f.is_locked();
-      });
+
+            auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
+               return !f.is_local() && !f.is_locked();});
+
+
+
+
+
       if (want_file != files.end()) {
          PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
             return node.equals(want_file->get_cookie());
