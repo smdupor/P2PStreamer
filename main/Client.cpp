@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
    std::cin >> server_id;*/
    if(server_id.length()==1)
       server_id = "localhost";
-
-   P2PClient client = P2PClient(server_id, "logs/logfileexample.txt", true);
+      std::string logfile = "logs/" + std::string(argv[1]) + ".csv";
+   P2PClient client = P2PClient(server_id, logfile, true);
 
    //std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
    //std::cin >> choose;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
    while(client.get_system_on()){
       newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
-      std::this_thread::sleep_for(std::chrono::microseconds(500));
+      //std::this_thread::sleep_for(std::chrono::microseconds(700));
       std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
       accept_thread.detach();
    }

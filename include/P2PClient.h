@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <vector>
 #include <thread>
+#include <mutex>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -37,13 +38,15 @@
 struct LogItem {
    LogItem(int qty) {
          this->qty = qty;
-         this->time = std::chrono::high_resolution_clock::now();
+         this->time = std::chrono::steady_clock::now();
          //#define duration(a) std::chrono::duration_cast<std::chrono::nanoseconds>(a).count()
          //#define timeNow() std::chrono::high_resolution_clock::now()
    }
-   std::chrono::high_resolution_clock::time_point time;
+   std::chrono::steady_clock::time_point time;
    int qty;
 };
+
+
 
 class P2PClient : public NetworkCommunicator {
 private:
@@ -54,6 +57,8 @@ private:
    std::list<FileEntry> files;
    bool system_on;
    std::list<LogItem> logs;
+   int logging_offset;
+
 
    void get_peer_list(int sockfd, bool registration);
 

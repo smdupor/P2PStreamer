@@ -143,7 +143,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
       bzero(in_buffer, MSG_LEN*2);
       n = read(sockfd, in_buffer, MSG_LEN*2);
 
-      if(n<0) {
+      if(timeout_counter>200) {
         error("Error in reading socket");
         return kDone + " \n";
       }
@@ -153,11 +153,12 @@ std::string NetworkCommunicator::receive(int sockfd) {
       }
       else {
          in_message += std::string((char *) in_buffer);
+         timeout_counter = 1;
       }
      // std::this_thread::sleep_for(std::chrono::milliseconds (100));
       // If we determine that we've got the entire message
       if(!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n"){
-        // print_recv(in_message);
+         //print_recv(in_message);
          in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
          return in_message;
       }
@@ -182,14 +183,15 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
       bzero(in_buffer, MSG_LEN * 2);
       n = read(sockfd, in_buffer, MSG_LEN * 2);
 
-      if (n < 0) {
-         error("Error in reading socket: " + debug_loc);
+      if (timeout_counter>200) {
+         error("E**" + debug_loc+ " " + in_message);
          return kDone + " \n";
       } else if (std::strlen((char *) in_buffer) == 0) {
          std::this_thread::sleep_for(std::chrono::microseconds(kEmptyBufferSleep));
          timeout_counter += 1;
       } else {
          in_message += std::string((char *) in_buffer);
+         timeout_counter = 1;
       }
       // std::this_thread::sleep_for(std::chrono::milliseconds (100));
       // If we determine that we've got the entire message
