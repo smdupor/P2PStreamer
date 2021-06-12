@@ -17,7 +17,8 @@ plt.ylabel("Number of Files Downloaded")
 plt.title("Experiment 2 Results: Round-Robin Enabled on Dist DB " + sys.argv[1])
 plt.legend()
 plt.show()
-outFname = sys.argv[1]+".png"
-#plt.savefig(outFname)
+#outFname = sys.argv[1]+".png"
+outFname = "Exp2_Faster.png"
+plt.savefig(outFname)
 
 
