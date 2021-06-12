@@ -447,70 +447,11 @@ void P2PClient::downloader() {
       }
       // Find the first file in our list that we want.
 
-     // download_file();
+      download_file(want_file);
 
 
 
-      if (want_file != files.end()) {
-         PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
-            return node.equals(want_file->get_cookie());
-         });
-         peer.lock();
 
-         // ask for the file
-         int sockfd = outgoing_connection(peer.get_address(), peer.get_port());
-         outgoing_message = kGetFile + want_file->to_msg() + "\n";
-
-         transmit(sockfd, outgoing_message);
-
-         //get the control packet that tells us the lengths
-         incoming_message = receive_no_delim(sockfd, "line391");
-         messages = split(incoming_message, '\n');
-         if (messages[0].length() > 0) {
-            tokens = split(messages[0], ' ');
-
-            std::ofstream output_file(want_file->get_path());
-            int end_length = stoi(tokens[2]);
-            int bytes_written = 0;
-
-            // If we have gotten both the header and some data (likely) split and use the data
-            if (messages.size() > 1) {
-               int initial_offset =
-                       messages[0].length() + 1; // tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
-               incoming_message = incoming_message.substr(initial_offset);
-               output_file.write(incoming_message.c_str(), incoming_message.length());
-               bytes_written += incoming_message.length();
-            }
-
-            // Continue to get file data and write to file until we have the entire file
-            while (bytes_written < end_length) {
-               incoming_message = receive_no_delim(sockfd, "line 410");
-               output_file.write(incoming_message.c_str(), incoming_message.length());
-               // error(incoming_message);
-               bytes_written += incoming_message.length();
-            }
-            // Close the file and the connection.
-            output_file.close();
-            want_file->clear_lock();
-            close(sockfd);
-            peer.unlock();
-            // Add the file to the database
-            files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path()));
-
-            // Update our quantities
-            ++local_qty;
-            logs.push_back(LogItem(local_qty));
-            //print_recv("I now have this many files: " + std::to_string(local_qty));
-            // Check through the database and mark any entries of this file as also-locally-available.
-            for (FileEntry &f : files) {
-               if (f.get_id() == want_file->get_id()) {
-                  f.set_local();
-               }
-            }
-         } else {
-            error("An error occurred during the download step; Likely, a malformed packet was received.");
-         }
-      }
 
       downloader_lock.unlock();
       // We have not been able to get anything new, back off the download process
@@ -568,10 +509,69 @@ void P2PClient::downloader() {
 
 // For now, let's pick the first file in the database that we don't have. Possibly, in the future,
 // performance might be enhanced by a more random picking
-   inline void P2PClient::download_file() {
+   inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) {
    std::string incoming_message, outgoing_message;
    int sockfd;
    std::vector<std::string> tokens, messages;
 
+   if (want_file != files.end()) {
+      PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
+         return node.equals(want_file->get_cookie());
+      });
+      peer.lock();
 
+      // ask for the file
+      int sockfd = outgoing_connection(peer.get_address(), peer.get_port());
+      outgoing_message = kGetFile + want_file->to_msg() + "\n";
+
+      transmit(sockfd, outgoing_message);
+
+      //get the control packet that tells us the lengths
+      incoming_message = receive_no_delim(sockfd, "line391");
+      messages = split(incoming_message, '\n');
+      if (messages[0].length() > 0) {
+         tokens = split(messages[0], ' ');
+
+         std::ofstream output_file(want_file->get_path());
+         int end_length = stoi(tokens[2]);
+         int bytes_written = 0;
+
+         // If we have gotten both the header and some data (likely) split and use the data
+         if (messages.size() > 1) {
+            int initial_offset =
+                    messages[0].length() + 1; // tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
+            incoming_message = incoming_message.substr(initial_offset);
+            output_file.write(incoming_message.c_str(), incoming_message.length());
+            bytes_written += incoming_message.length();
+         }
+
+         // Continue to get file data and write to file until we have the entire file
+         while (bytes_written < end_length) {
+            incoming_message = receive_no_delim(sockfd, "line 410");
+            output_file.write(incoming_message.c_str(), incoming_message.length());
+            // error(incoming_message);
+            bytes_written += incoming_message.length();
+         }
+         // Close the file and the connection.
+         output_file.close();
+         want_file->clear_lock();
+         close(sockfd);
+         peer.unlock();
+         // Add the file to the database
+         files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path()));
+
+         // Update our quantities
+         ++local_qty;
+         logs.push_back(LogItem(local_qty));
+         //print_recv("I now have this many files: " + std::to_string(local_qty));
+         // Check through the database and mark any entries of this file as also-locally-available.
+         for (FileEntry &f : files) {
+            if (f.get_id() == want_file->get_id()) {
+               f.set_local();
+            }
+         }
+      } else {
+         error("An error occurred during the download step; Likely, a malformed packet was received.");
+      }
+   }
 }

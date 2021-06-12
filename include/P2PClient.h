@@ -79,7 +79,7 @@ public:
    void accept_download_request(int sockfd);
    void debug_print_hosts_and_files();
    void downloader();
-   inline void download_file();
+   inline void download_file(std::list<FileEntry>::iterator &want_file);
    bool get_system_on();
 };
 
