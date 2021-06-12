@@ -36,7 +36,7 @@ void P2PClient::start(std::string config_file) {
    int sockfd = outgoing_connection(reg_serv, kControlPort);
 
    get_peer_list(sockfd, true);
-
+   close(sockfd);
    // Load our configuration file to set up the local files in our distributed DB
    parse_config(config_file);
    check_files();
@@ -59,7 +59,7 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
       ///////////////////////////TODO Returning Registration//////////////////////////
    }*/
    else { //This client is already registered and we are requesting the peer list
-      out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+ "\n\n";
+      out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+ " \n\n";
       transmit(sockfd, out_message);
    }
 
@@ -81,6 +81,7 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
          }
          else if (tokens[0] == kPeerListItem) { // We have been sent a peer list node item
             // Check to ensure this item is not me
+           // std::cout<< tokens[10];
             if (cookie != stoi(tokens[4])) {
                // check to see if we have it
                auto p = std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
@@ -91,25 +92,27 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
                   peers.push_back(PeerNode(tokens[2], stoi(tokens[4]), stoi(tokens[6]), stoi(tokens[8])));
                   lock = false;
                } else if (tokens[10] == "TRUE") { // We have it, and it's active
-                     /////////////For now, we are going to prefer our own recognizance that the host is indeed down.
+                  //std::cout << "FOUND ACTIVE";
                   p->set_active(stoi(tokens[8]));
+
                } else if(tokens[10] == "FALSE") { // We have it, and it's inactive
                   p->set_inactive();
                   // Drop its files from the database
                   files.remove_if([&](FileEntry f) {return f.equals(*p);});
                }
                else { // We have it, but it's inactive according to the registration server
-                  p->set_inactive();
+                 // p->set_inactive();
                }
             } //if(cookie != me)
          } // else if(tokens[0] == kPeerListItem
          else if (tokens[0] == kDone) { // List is finished downloading
-            close(sockfd);
+            downloader_lock.unlock();
+            return;
             loop_control = false;
          }
       }
 
-downloader_lock.unlock();
+
 }
 
 
@@ -183,7 +186,10 @@ inline void P2PClient::parse_config(std::string config_file) {
       //   verbose(f.to_s());}
    }
    else{
-      std::cout << "PROBLEM WITH CONFIGURATION FILE.";
+      std::cout << "*****************************PROBLEM WITH CONFIGURATION FILE.***************************";
+      std::cout << "The system has likely been started from an incorrect working directory. System exiting now.";
+      system_on = false;
+      return;
    }
    file.close();
 
@@ -339,6 +345,7 @@ void P2PClient::downloader() {
    int remote_port;
    int temp_id, temp_cookie, past_local_qty, slowdown = 100;
    bool picked_file = false;
+   bool first = true;
 
    // Run Downloads as long as we don't have all the files we want
    while (system_on) {
@@ -357,80 +364,91 @@ void P2PClient::downloader() {
          peers.reverse();
       }*/
 
-
-      // Contact all the peers and get their distributed databases
-      for (PeerNode &p : peers) {
-         if (p.active() && !p.locked()) {
-            int sockfd = outgoing_connection(p.get_address(), p.get_port());
-
-            if (sockfd >= 0) {
-               outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
-               transmit(sockfd, outgoing_message, 300);
-
-               incoming_message = receive(sockfd, "Line318");
-               messages = split(incoming_message, '\n');
-               for (std::string &message : messages) {
-                  tokens = split(message, ' ');
-                  /////////////////TODO Define tokens[] in commments////////////////
-                  // If it's a file index item, and not one of my local ones, check if we have it and add if not.
-                  if (tokens[0] == kIndexItem) {
-                     //&& stoi(tokens[4]) != cookie
-                     // check to see if we have it
-                     auto file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
-                        return f.equals(stoi(tokens[2]), stoi(tokens[4])); // tokens[2] = id, tokens[4] = cookie
-                     });
-
-                     // We don't have it, need to add it
-                     if (file == files.end()) {
-                        /////////////////TODO Define tokens[] in commments////////////////
-                        std::string temp_path = path_prefix + "rfc" + tokens[2] + ".txt";
-                        int temp_id = stoi(tokens[2]);
-                        int temp_cookie = stoi(tokens[4]);
-
-                        bool temp_local = false;
-
-                        // if we can find A copy of the fileentry that is local, then we will note in the DB
-                        // that this file is also stored locally on this machine
-                        for (FileEntry &temp : files) {
-                           if (temp.equals(temp_id) && temp.is_local()) {
-                              temp_local = true;
-                           }
-                        }
-
-                        // If someone else is modifying the (whole) list, wait until it's unlocked
-                        //while(lock=true) { usleep(rand() % 100); } // If someone else is modifying the list, wait
-
-                        lock = true;
-                        // Add to the database. tokens[6] contains the hostname.
-                        files.push_back(FileEntry(temp_id, tokens[6],
-                                                  temp_cookie, temp_path, temp_local));
-                        lock = false;
-                     }
-                  } else if (tokens[0] == kDone) {
-                     //done = true;
-                     close(sockfd);
-                  } else if (tokens[0] == "") {
-                     error("blank token");
-                  } else {
-                     error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
-                           tokens[0]);
-                  }
-               }
-               //close(sockfd);
-            }
-         } else {
-            error("DEAD SOCK 383\n");
-
-            p.report_down();
-         }
-      } //for
-
-      // Find the first file in our list that we want.
-
-      //download_file();
-      auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
+      auto want_file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+         //std::cout << f.to_s()<<"\n";
          return !f.is_local() && !f.is_locked();
       });
+
+
+      if(want_file == files.end()) {
+         // Contact all the peers and get their distributed databases
+         for (PeerNode &p : peers) {
+            if (p.active() && !p.locked()) {
+               int sockfd = outgoing_connection(p.get_address(), p.get_port());
+
+               if (sockfd >= 0) {
+                  outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
+                  transmit(sockfd, outgoing_message, 300);
+
+                  incoming_message = receive(sockfd, "Line318");
+                  messages = split(incoming_message, '\n');
+                  for (std::string &message : messages) {
+                     tokens = split(message, ' ');
+                     /////////////////TODO Define tokens[] in commments////////////////
+                     // If it's a file index item, and not one of my local ones, check if we have it and add if not.
+                     if (tokens[0] == kIndexItem) {
+                        //&& stoi(tokens[4]) != cookie
+                        // check to see if we have it
+                        auto file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+                           return f.equals(stoi(tokens[2]), stoi(tokens[4])); // tokens[2] = id, tokens[4] = cookie
+                        });
+
+                        // We don't have it, need to add it
+                        if (file == files.end()) {
+                           /////////////////TODO Define tokens[] in commments////////////////
+                           std::string temp_path = path_prefix + "rfc" + tokens[2] + ".txt";
+                           int temp_id = stoi(tokens[2]);
+                           int temp_cookie = stoi(tokens[4]);
+
+                           bool temp_local = false;
+
+                           // if we can find A copy of the fileentry that is local, then we will note in the DB
+                           // that this file is also stored locally on this machine
+                           for (FileEntry &temp : files) {
+                              if (temp.equals(temp_id) && temp.is_local()) {
+                                 temp_local = true;
+                              }
+                           }
+
+                           // If someone else is modifying the (whole) list, wait until it's unlocked
+                           //while(lock=true) { usleep(rand() % 100); } // If someone else is modifying the list, wait
+
+                           lock = true;
+                           // Add to the database. tokens[6] contains the hostname.
+                           files.push_back(FileEntry(temp_id, tokens[6],
+                                                     temp_cookie, temp_path, temp_local));
+                           lock = false;
+                           first = false;
+                        }
+                     } else if (tokens[0] == kDone) {
+                        //done = true;
+                        close(sockfd);
+                     } else if (tokens[0] == "") {
+                        error("blank token");
+                     } else {
+                        error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
+                              tokens[0]);
+                     }
+                  }
+                  //close(sockfd);
+               }
+            } else {
+               error("DEAD SOCK 383\n");
+
+               p.report_down();
+            }
+            want_file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+               return !f.is_local() && !f.is_locked();
+            });
+            if (want_file != files.end()){
+               std::cout << want_file -> to_s();
+               break;}
+         } //for
+      }
+      // Find the first file in our list that we want.
+
+     // download_file();
+
 
 
       if (want_file != files.end()) {

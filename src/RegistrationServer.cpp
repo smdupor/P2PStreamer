@@ -92,7 +92,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 				// This is a returning registration, and tokens[2] will contain the cookie.
             PeerNode &pn = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
                return node.equals(stoi(tokens[2]));});
-            pn.keepAlive();
+            pn.set_inactive();
             pn.increment_reg_count();
             out_message = kCliRegAck + pn.to_msg();
 			}
@@ -152,6 +152,9 @@ int RegistrationServer::accept_reg(sockinfo sock){
          }
 		}
       else if(tokens[0] == kGetPeerList) { // Registered client wants the list of peers
+         std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
+            return node.equals(stoi(tokens[2]));})->keepAlive();
+
          for(PeerNode p : peers) { //Transmit each
             out_message = kPeerListItem + p.to_msg();
             transmit(sock.socket, out_message);
@@ -176,6 +179,7 @@ std::string RegistrationServer::create_new_peer(sockinfo sock) {
 	//create a new peernode for the new registrant
 	PeerNode p = PeerNode(std::string(sock.cli_addr), latest_cookie, kControlPort+latest_cookie);
 	++latest_cookie;
+	p.set_inactive();
 
 	// Add to list of peers
 	peers.push_back(p);

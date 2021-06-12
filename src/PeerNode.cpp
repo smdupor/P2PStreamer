@@ -84,7 +84,7 @@ std::string PeerNode::to_msg() {
 
 // Reset TTL when an active signal is received
 void PeerNode::keepAlive() {
-	TTL = 7200;
+   this->set_active(7200);
 }
 
 // Decrement TTL value when requested by controller
@@ -95,11 +95,11 @@ void PeerNode::dec_ttl() {
 }
 
 void PeerNode::set_active(int ttl) {
-   TTL = ttl;
-   activeNow = true;
+   this->TTL = ttl;
+   this->activeNow = true;
 
    // If host has actually timed out, make it inactive.
-   if(TTL <= 0)
+   if(this->TTL <= 0)
       set_inactive();
 }
 
@@ -138,7 +138,7 @@ bool PeerNode::equals(std::string hostname) {
 }
 
 bool PeerNode::equals(int cookie) {
-	if(this->cookie == cookie && this->activeNow == true)
+	if(this->cookie == cookie)
 		return true;
 	return false;
 }

@@ -62,9 +62,9 @@ int main(int argc, char *argv[]) {
    listen_socket = client.listener(client.get_port());
 
    while(client.get_system_on()){
-      newsockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
+      int new_sockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
       //std::this_thread::sleep_for(std::chrono::microseconds(700));
-      std::thread accept_thread(&P2PClient::accept_download_request, &client, newsockfd);
+      std::thread accept_thread(&P2PClient::accept_download_request, &client, new_sockfd);
       accept_thread.detach();
    }
 
