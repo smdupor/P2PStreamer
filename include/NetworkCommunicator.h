@@ -64,6 +64,7 @@ protected:
 	std::time_t start_time;
 
 
+
 	virtual void ttl_decrementer();
 	std::vector<std::string> split(const std::string &input, char delim);
    void transmit(int sockfd, std::string out_message);

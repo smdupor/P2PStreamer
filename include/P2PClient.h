@@ -60,12 +60,12 @@ private:
    int logging_offset;
 
 
-   void get_peer_list(int sockfd, bool registration);
+   inline void get_peer_list(int sockfd, bool registration);
 
    //int outgoing_connection(std::string hostname, int port);
-   void parse_config(std::string config_file);
-   void check_files();
-   void transmit_file(int sockfd, FileEntry &file);
+   inline void parse_config(std::string config_file);
+   inline void check_files();
+   inline void transmit_file(int sockfd, FileEntry &file);
 
 
 
@@ -79,7 +79,7 @@ public:
    void accept_download_request(int sockfd);
    void debug_print_hosts_and_files();
    void downloader();
-   void download_file();
+   inline void download_file();
    bool get_system_on();
 };
 

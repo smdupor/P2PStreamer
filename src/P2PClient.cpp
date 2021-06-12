@@ -43,7 +43,7 @@ void P2PClient::start(std::string config_file) {
    logs.push_back(LogItem(local_qty));
 }
 
-void P2PClient::get_peer_list(int sockfd, bool registration) {
+inline void P2PClient::get_peer_list(int sockfd, bool registration) {
    // Initialize control variables and message strings
    downloader_lock.lock();
    bool loop_control = true;
@@ -130,7 +130,7 @@ void P2PClient::keep_alive() {
    }
 }
 
-void P2PClient::parse_config(std::string config_file) {
+inline void P2PClient::parse_config(std::string config_file) {
    downloader_lock.lock();
    files_lock.lock();
    char buffer[512];
@@ -188,7 +188,7 @@ void P2PClient::parse_config(std::string config_file) {
 
 }
 
-void P2PClient::check_files(){
+inline void P2PClient::check_files(){
    for (FileEntry &file : files) {
       std::ifstream infile(file.get_path());
       // Use C-Style IO to write data to the socket.
@@ -251,7 +251,7 @@ void P2PClient::accept_download_request(int sockfd){
          if (tokens[0] == kGetIndex) {
             int temp_cookie = stoi(tokens[2]);
 
-            for(FileEntry &file : files){
+            for(FileEntry file : files){
                out_message = kIndexItem + file.to_msg();
                transmit(sockfd, out_message);
             }
@@ -259,21 +259,46 @@ void P2PClient::accept_download_request(int sockfd){
             transmit(sockfd, out_message,0);
             loop_control = false;
             std::this_thread::sleep_for(std::chrono::seconds(2));
-            close(sockfd);
+            //close(sockfd);
             return;
          }
          else if (tokens[0] == kGetFile) {
             //return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
             // [2] file id, [4] cookie, [6] hostname
-            auto want_file = std::find_if(files.begin(), files.end(), [&](FileEntry& f) {
+            auto want_file = *std::find_if(files.begin(), files.end(), [&](FileEntry& f) {
                return f.equals(stoi(tokens[2]), this->cookie); });
 
-            transmit_file(sockfd,  *want_file);
+            //transmit_file(sockfd,  *want_file);
+            std::ifstream infile(want_file.get_path());
+            out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " "+"\n";
+            transmit(sockfd, out_message);
+            //std::this_thread::sleep_for(std::chrono::seconds(2));
+            // Use C-Style IO to write data to the socket.
+            char buffer[MSG_LEN*2];
+            int n=0;
+            bzero(buffer,MSG_LEN*2);
+            while(infile.getline(buffer,MSG_LEN*2)){
+               // Add back the newline stripped by getline()
+               buffer[strlen(buffer)] = '\n';
+               transmit(sockfd,std::string(buffer),700);
+               //std::this_thread::sleep_for(std::chrono::microseconds(500));
+               // Write the line to the socket
+               //	n = write(sockfd, buffer, strlen(buffer));
+               //if (n < 0)
+               // error("ERROR writing file data to socket");
+               //	print_sent(std::string(buffer));
+               bzero(buffer, MSG_LEN*2);
+            }
+            //print_sent("Just sent:" + want_file.to_s() + " \n");
+//std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            infile.close();
+            want_file.clear_lock();
+            //debug_print_hosts_and_files();
          }
       }
 }
 
-void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
+inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 	std::string out_message;
    std::ifstream infile(want_file.get_path());
 	out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " "+"\n";
@@ -317,7 +342,10 @@ void P2PClient::downloader() {
       past_local_qty = local_qty;
       // Contact the registration server and get the list of peers
      int sockfd = outgoing_connection(reg_serv, kControlPort);
-      get_peer_list(sockfd, false);
+
+
+
+     get_peer_list(sockfd, false);
       close(sockfd);
       downloader_lock.lock();
 
@@ -330,19 +358,11 @@ void P2PClient::downloader() {
       // Contact all the peers and get their distributed databases
       for (PeerNode &p : peers) {
          if (p.active() && !p.locked()) {
-           sockfd = outgoing_connection(p.get_address(), p.get_port());
+           int sockfd = outgoing_connection(p.get_address(), p.get_port());
 
-            if (sockfd > 0) {
+            if (sockfd >= 0) {
                outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
                transmit(sockfd, outgoing_message,300);
-
-               bool done = false;
-               /*while (!done) {
-
-                  while (incoming_message.length() != 0 &&
-                         incoming_message.substr(incoming_message.length() - 1) != "\n") {
-                     incoming_message += receive(sockfd, "Line357");
-                  }*/
 
                incoming_message = receive(sockfd, "Line318");
                   messages = split(incoming_message, '\n');
@@ -384,7 +404,7 @@ void P2PClient::downloader() {
                            lock = false;
                         }
                      } else if (tokens[0] == kDone) {
-                        done = true;
+                        //done = true;
                         close(sockfd);
                      } else if (tokens[0] == "") {
                         error("blank token");
@@ -393,7 +413,7 @@ void P2PClient::downloader() {
                               tokens[0]);
                      }
                   }
-                  close(sockfd);
+                  //close(sockfd);
                }
             } else { error("DEAD SOCK 383\n");
 
@@ -402,9 +422,9 @@ void P2PClient::downloader() {
 
          // Find the first file in our list that we want.
 
-
-            auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
-               return !f.is_local() && !f.is_locked();});
+      //download_file();
+      auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
+         return !f.is_local() && !f.is_locked();});
 
 
 
@@ -417,7 +437,7 @@ void P2PClient::downloader() {
          peer.lock();
 
          // ask for the file
-         sockfd = outgoing_connection(peer.get_address(), peer.get_port());
+         int sockfd = outgoing_connection(peer.get_address(), peer.get_port());
          outgoing_message = kGetFile + want_file->to_msg()+"\n";
 
          transmit(sockfd, outgoing_message);
@@ -444,7 +464,7 @@ void P2PClient::downloader() {
             while (bytes_written < end_length) {
                incoming_message = receive_no_delim(sockfd, "line 410");
                output_file.write(incoming_message.c_str(), incoming_message.length());
-              // error(incoming_message);
+               // error(incoming_message);
                bytes_written += incoming_message.length();
             }
             // Close the file and the connection.
@@ -469,6 +489,7 @@ void P2PClient::downloader() {
             error("An error occurred during the download step; Likely, a malformed packet was received.");
          }
       }
+
       downloader_lock.unlock();
       // We have not been able to get anything new, back off the download process
       if (past_local_qty == local_qty) {
@@ -523,71 +544,10 @@ void P2PClient::downloader() {
 
 // For now, let's pick the first file in the database that we don't have. Possibly, in the future,
 // performance might be enhanced by a more random picking
-   void P2PClient::download_file() {
+   inline void P2PClient::download_file() {
    std::string incoming_message, outgoing_message;
    int sockfd;
    std::vector<std::string> tokens, messages;
 
-   auto want_file = std::find_if(files.begin(), files.end(), [](FileEntry &f) {
-      return !f.is_local() && !f.is_locked();
-   });
-   if (want_file != files.end()) {
-      PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
-         return node.equals(want_file->get_cookie());
-      });
-      peer.lock();
-      debug_print_hosts_and_files();
-      // ask for the file
-      sockfd = outgoing_connection(peer.get_address(), peer.get_port());
-      outgoing_message = kGetFile + want_file->to_msg()+"\n";
 
-      transmit(sockfd, outgoing_message);
-
-         //get the control packet that tells us the lengths
-         incoming_message = receive_no_delim(sockfd, "line489");
-         messages = split(incoming_message, '\n');
-         if(messages[0].length() > 0) {
-            tokens = split(messages[0], ' ');
-
-            std::ofstream output_file(want_file->get_path());
-            //////////////////////////////////////////////////////////////////////////////////////////////////////TODO: Set up parsing of the control packet properly.
-            int end_length = stoi(tokens[2]);
-            int bytes_written = 0;
-
-            // Implies that we have accidentally gotten more than the header. Makes more sense to read the header, stop, then read the data.
-            if (messages.size() > 1) {
-               int initial_offset = messages[0].length() + 1; // tokens[0].length() + tokens[1].length() + tokens[2].length() + 3;
-               incoming_message = incoming_message.substr(initial_offset);
-               output_file.write(incoming_message.c_str(), incoming_message.length());
-               bytes_written += incoming_message.length();
-            }
-
-            while (bytes_written < end_length) {
-               incoming_message = receive_no_delim(sockfd, "line508");
-               output_file.write(incoming_message.c_str(), incoming_message.length());
-               //error(incoming_message);
-               bytes_written += incoming_message.length();
-            }
-            // Close the file and the connection.
-            output_file.close();
-            want_file->clear_lock();
-            close(sockfd);
-            peer.unlock();
-            // Add the file to the database
-            files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path()));
-
-            // Update our quantities
-            ++local_qty;
-            print_recv("I now have this many files: " + std::to_string(local_qty) + "\n");
-            // Check through the database and mark any entries of this file as also-locally-available.
-            for (FileEntry &f : files) {
-               if (f.get_id() == want_file->get_id()) {
-                  f.set_local();
-               }
-            }
-            debug_print_hosts_and_files();
-         } else {
-            error("An error occurred during the download step; Likely, a malformed packet was received.");
-         }
-   }
 }

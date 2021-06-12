@@ -81,7 +81,7 @@ void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
    //usleep(50000);
    out_buffer = out_message.c_str();
    //std::cout << out_message;
-   // print_sent(out_message);
+    print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n<0)
@@ -196,7 +196,7 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
       // std::this_thread::sleep_for(std::chrono::milliseconds (100));
       // If we determine that we've got the entire message
       if (!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n") {
-         // print_recv(in_message);
+          print_recv(in_message);
          in_message = in_message.substr(0, in_message.length() - 1); // Strip the extra newline
          return in_message;
       }
@@ -314,7 +314,7 @@ void NetworkCommunicator::print_sent(std::string input){ // Print sent data in g
 }
 
 void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
-   std::cout << "\033[31m" << input << "\033[0m";
+   std::cout << "\033[36m" << input << "\033[0m";
    std::cout.flush();
 
 }
