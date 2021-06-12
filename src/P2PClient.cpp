@@ -237,7 +237,7 @@ void P2PClient::accept_download_request(int sockfd){
    bool loop_control = true;
     //  std::this_thread::sleep_for(std::chrono::microseconds(500));
    // Start by passing along the distributed database
-   std::this_thread::sleep_for(std::chrono::microseconds(700));
+   //std::this_thread::sleep_for(std::chrono::microseconds(700));
 
    in_message = receive(sockfd,"line237");
 
@@ -289,7 +289,7 @@ void P2PClient::accept_download_request(int sockfd){
             while(infile.getline(buffer,MSG_LEN*2)){
                // Add back the newline stripped by getline()
                buffer[strlen(buffer)] = '\n';
-               transmit(sockfd,std::string(buffer),150);
+               transmit(sockfd,std::string(buffer),0);
                //std::this_thread::sleep_for(std::chrono::microseconds(500));
                // Write the line to the socket
                //	n = write(sockfd, buffer, strlen(buffer));
@@ -320,7 +320,7 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 	while(infile.getline(buffer,MSG_LEN*2)){
 			// Add back the newline stripped by getline()
 				buffer[strlen(buffer)] = '\n';
-				transmit(sockfd,std::string(buffer),700);
+				transmit(sockfd,std::string(buffer),0);
             //std::this_thread::sleep_for(std::chrono::microseconds(500));
 				// Write the line to the socket
 			//	n = write(sockfd, buffer, strlen(buffer));
@@ -341,7 +341,7 @@ void P2PClient::downloader() {
    std::vector<std::string> messages, tokens;
    std::list<FileEntry>::iterator want_file;
 
-   std::this_thread::sleep_for(std::chrono::milliseconds(50));
+   //std::this_thread::sleep_for(std::chrono::milliseconds(50));
    int remote_port;
    int temp_id, temp_cookie, past_local_qty, slowdown = 100;
    bool picked_file = false;
@@ -378,7 +378,7 @@ void P2PClient::downloader() {
 
                if (sockfd >= 0) {
                   outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
-                  transmit(sockfd, outgoing_message, 300);
+                  transmit(sockfd, outgoing_message, 0);
 
                   incoming_message = receive(sockfd, "Line318");
                   messages = split(incoming_message, '\n');
