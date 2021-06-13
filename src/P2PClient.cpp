@@ -12,7 +12,7 @@
 
 std::mutex downloader_lock, files_lock;
 
-P2PClient::P2PClient(std::string addr_reg_serv, std::string logfile, bool verbose) {
+P2PClient::P2PClient(std::string &addr_reg_serv, std::string &logfile, bool verbose) {
 	reg_serv = (const char *) addr_reg_serv.c_str();
 	log = logfile;
 	lock = false;
@@ -23,7 +23,7 @@ P2PClient::P2PClient(std::string addr_reg_serv, std::string logfile, bool verbos
 }
 
 P2PClient::~P2PClient() {
-	// TODO Auto-generated destructor stub
+
 }
 
 bool P2PClient::get_system_on(){
@@ -48,15 +48,15 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
    downloader_lock.lock();
    std::string in_message, out_message;
    // Reset registration keepalive counter
-   timeout_counter = 0;
 
    if(registration && cookie == -1){ // This is a new registration
       out_message = kCliRegister + " NEW \n\n";
       transmit(sockfd, out_message);
    }
-   /*else if (registration) { // This is a returning registration
-      ///////////////////////////TODO Returning Registration//////////////////////////
-   }*/
+   else if (registration) {
+      out_message = kCliRegister + " Cookie: " + std::to_string(cookie) + " \n\n";
+      transmit(sockfd, out_message);
+   }
    else { //This client is already registered and we are requesting the peer list
       out_message = kGetPeerList + " " + "Cookie: " + std::to_string(cookie)+ " \n\n";
       transmit(sockfd, out_message);
@@ -77,7 +77,6 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
          }
          else if (tokens[CONTROL] == kPeerListItem) { // We have been sent a peer list node item
             // Check to ensure this item is not me
-
             if (cookie != stoi(tokens[COOKIE])) {
                // check to see if we have it
                auto p = std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
@@ -94,20 +93,14 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
                   // Drop its files from the database
                   files.remove_if([&](FileEntry f) {return f.equals(*p);});
                }
-               else { // We have it, but it's inactive according to the registration server
-                 // p->set_inactive();
-               }
-            } //if(cookie != me)
-         } // else if(tokens[0] == kPeerListItem
+            }
+         }
          else if (tokens[CONTROL] == kDone) { // List is finished downloading
             downloader_lock.unlock();
             return;
          }
       }
-
-
 }
-
 
 void P2PClient::keep_alive() {
    int client_ttl_counter=0, file_ttl_counter=0;
@@ -245,7 +238,7 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
 
    out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " "+"\n";
    transmit(sockfd, out_message);
-   // Use C-Style IO to write data to the socket.
+
    char buffer[MSG_LEN*2];
    bzero(buffer,MSG_LEN*2);
 
@@ -256,11 +249,9 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
       transmit(sockfd,out_message);
       bzero(buffer, MSG_LEN*2);
    }
-   //print_sent("Just sent:" + want_file.to_s() + " \n");
-//std::this_thread::sleep_for(std::chrono::milliseconds(500));
    infile.close();
    want_file.clear_lock();
-   //debug_print_hosts_and_files();
+
 }
 
 
@@ -321,7 +312,6 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
 
             for (std::string &message : messages) {
                tokens = split(message, ' ');
-               /////////////////TODO Define tokens[] in commments////////////////
                // If it's a file index item, and not one of my local ones, check if we have it and add if not.
                if (tokens[CONTROL] == kIndexItem) {
 
@@ -335,7 +325,6 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
                      add_file_entry(tokens);
                   }
                } else if (tokens[CONTROL] == kDone) {
-
                   close(sockfd);
                } else {
                   error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
@@ -347,6 +336,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
          error("DEAD SOCK 383\n");
          p.report_down();
       }
+
       want_file = find_wanted_file();
       if (want_file != files.end()){
          break;}
@@ -375,15 +365,12 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
       }
    }
 
-   lock = true;
    files.push_back(FileEntry(temp_id, tokens[HOSTNAME],
                              temp_cookie, temp_path, temp_local, stoi(tokens[TTL])));
-   lock = false;
-
 }
 
 void P2PClient::shutdown_system() {
-   error("SyswideQty Reached+ " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
+   verbose("SyswideQty Reached:  " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
          " Exiting Download Loop \n");
    std::this_thread::sleep_for(std::chrono::seconds(3));
 
@@ -397,7 +384,7 @@ void P2PClient::shutdown_system() {
    close(sockfd);
 }
 
-void P2PClient::downloader_backoff(size_t past_local_qty, int backoff_time) {// We have not been able to get anything new, back off the download process
+void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {// We have not been able to get anything new, back off the download process
    if (past_local_qty == local_qty) {
       if (backoff_time < 1000 && backoff_time >= 100) {
          backoff_time *= 2;
@@ -434,12 +421,7 @@ void P2PClient::write_time_log() {// Dump the logfile
    dmp.close();
 }
 
-
-// Pick a file that we want to get
-
-// For now, let's pick the first file in the database that we don't have. Possibly, in the future,
-// performance might be enhanced by a more random picking
-   inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) {
+inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) {
    std::string incoming_message, outgoing_message;
    std::vector<std::string> tokens, messages;
 
@@ -467,8 +449,7 @@ void P2PClient::write_time_log() {// Dump the logfile
 
          // If we have gotten both the header and some data (likely) split and use the data
          if (messages.size() > 1) {
-            int initial_offset =
-                    messages[0].length() + 1;
+            int initial_offset = messages[0].length() + 1;
             incoming_message = incoming_message.substr(initial_offset);
             output_file.write(incoming_message.c_str(), incoming_message.length());
             bytes_written += incoming_message.length();
@@ -478,7 +459,6 @@ void P2PClient::write_time_log() {// Dump the logfile
          while (bytes_written < end_length) {
             incoming_message = receive_no_delim(sockfd);
             output_file.write(incoming_message.c_str(), incoming_message.length());
-            // error(incoming_message);
             bytes_written += incoming_message.length();
          }
          // Close the file and the connection.
@@ -492,7 +472,7 @@ void P2PClient::write_time_log() {// Dump the logfile
          // Update our quantities
          ++local_qty;
          logs.push_back(LogItem(local_qty));
-         //print_recv("I now have this many files: " + std::to_string(local_qty));
+
          // Check through the database and mark any entries of this file as also-locally-available.
          for (FileEntry &f : files) {
             if (f.get_id() == want_file->get_id()) {

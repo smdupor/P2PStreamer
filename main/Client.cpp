@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
       case 'F': client.start("conf/f.conf"); break;
       default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
    }
-   std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
 
    std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
    keep_alive_thread.detach();

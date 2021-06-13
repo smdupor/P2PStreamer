@@ -35,57 +35,45 @@
 #include "FileEntry.h"
 
 struct LogItem {
-   LogItem(int qty) {
+   explicit LogItem(size_t qty) {
          this->qty = qty;
          this->time = std::chrono::steady_clock::now();
-         //#define duration(a) std::chrono::duration_cast<std::chrono::nanoseconds>(a).count()
-         //#define timeNow() std::chrono::high_resolution_clock::now()
    }
    std::chrono::steady_clock::time_point time;
-   int qty;
+   size_t qty;
 };
-
-
 
 class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
    std::string hostname, path_prefix;
-   int ttl, cookie, timeout_counter;
-   size_t expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
+   int ttl{}, cookie;
+   size_t expected_qty{}, local_qty{}, system_wide_qty{}; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
    bool system_on;
    std::list<LogItem> logs;
-   int logging_offset;
-
 
    inline void get_peer_list(int sockfd, bool registration);
-
-   //int outgoing_connection(std::string hostname, int port);
    inline void parse_config(std::string config_file);
    inline void check_files();
    inline void transmit_file(int sockfd, FileEntry &file);
-
-
-
-public:
-   P2PClient(std::string addr_reg_server, std::string logfile, bool verbose);
-   ~P2PClient() override;
-   void start(std::string config_file);
-   void keep_alive();
-   //int listener();
-   //void *downloader(void *thread_id);
-   void accept_download_request(int sockfd);
-   void debug_print_hosts_and_files();
-   void downloader();
    inline void download_file(std::list<FileEntry>::iterator &want_file);
-   bool get_system_on();
+
    void write_time_log();
-   void downloader_backoff(size_t past_local_qty, int backoff_time);
+   void downloader_backoff(size_t past_local_qty, int &backoff_time);
    void shutdown_system();
    void add_file_entry(const std::vector<std::string> &tokens);
    std::_List_iterator<FileEntry> find_wanted_file();
    std::_List_iterator<FileEntry> &update_database(std::_List_iterator<FileEntry> &want_file);
+
+public:
+   P2PClient(std::string &addr_reg_server, std::string &logfile, bool verbose);
+   ~P2PClient() override;
+   void start(std::string config_file);
+   void keep_alive();
+   void accept_download_request(int sockfd);
+   void downloader();
+   bool get_system_on();
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */

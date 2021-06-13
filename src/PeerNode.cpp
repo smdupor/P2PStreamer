@@ -141,7 +141,7 @@ bool PeerNode::equals(int cookie) {
 }
 
 PeerNode::~PeerNode() {
-	// TODO Auto-generated destructor stub
+
 }
 
 std::string PeerNode::get_address() {
