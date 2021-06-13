@@ -8,7 +8,6 @@
  *      Author: smdupor
  */
 
-#include <constants.h>
 #include "PeerNode.h"
 
 //Regserv

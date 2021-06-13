@@ -17,7 +17,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "constants.h"
 #include "PeerNode.h"
 
 // Hold information about a socket

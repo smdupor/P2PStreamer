@@ -6,7 +6,6 @@
 //============================================================================
 
 #include <thread>
-#include "constants.h"
 #include "RegistrationServer.h"
 
 int main(void) {

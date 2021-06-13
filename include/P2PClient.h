@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "NetworkCommunicator.h"
-#include "constants.h"
 #include "PeerNode.h"
 #include "FileEntry.h"
 
