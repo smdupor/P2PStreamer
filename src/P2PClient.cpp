@@ -345,9 +345,27 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
 }
 
 std::_List_iterator<FileEntry> P2PClient::find_wanted_file() {
-   return std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+   /*return std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
             return !f.is_local() && !f.is_locked();
-         });
+         });*/
+   int count_non_local = 0;
+   for(FileEntry &f : files) {
+      if(!f.is_local()) {
+         ++count_non_local;
+      }
+   }
+   if(count_non_local == 0){
+      return files.end();
+   } else {
+      static constexpr double fraction { 1.0 / (RAND_MAX + 1.0) };
+      int rand_selector = 1 + static_cast<int>((count_non_local) * (std::rand() * fraction));
+      std::_List_iterator<FileEntry> temp = files.begin();
+      for(int i = 0; i<rand_selector; i++) {
+          temp = std::find_if(temp, files.end(), [&](FileEntry &f) {
+            return !f.is_local() && !f.is_locked();});
+      }
+      return temp;
+   }
 }
 
 void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
