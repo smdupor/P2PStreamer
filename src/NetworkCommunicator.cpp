@@ -12,7 +12,6 @@ int NetworkCommunicator::listener(int listen_port) {
    int sockfd; // socket descriptor
    struct sockaddr_in serv_addr; //socket addresses
 
-
    // Create the socket
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    if (sockfd<0){
@@ -72,12 +71,11 @@ void NetworkCommunicator::ttl_decrementer() {
 	//Override in subclasses
 }
 
-void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
+void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
    int n;
    const char *out_buffer;
-   //usleep(50000);
+
    out_buffer = out_message.c_str();
-   //std::cout << out_message;
    // print_sent(out_message);
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
@@ -85,53 +83,10 @@ void NetworkCommunicator::transmit(int sockfd, std::string out_message) {
       verbose("Error on write to buffer");
 }
 
-
-
-void NetworkCommunicator::transmit(int sockfd, std::string out_message, int throttle_delay_us) {
-
-   std::this_thread::sleep_for(std::chrono::microseconds(throttle_delay_us));
-   transmit(sockfd, out_message);
-
-}
-/*
-std::string NetworkCommunicator::receive(int sockfd) {
-   int n=0, timeout_counter=0, bytes_imm=0, past_bytes_read=0;
-   char *in_buffer[1];
-   bzero(in_buffer, 1);
-   bool first_newline=false;
-
-   std::string in_message = std::string("");
-
-	 // As long as data is coming in, keep reading.
-	 while(true){
-	 bzero(in_buffer, 1);
-   n = read(sockfd, in_buffer, 1);
-
-   if(n<0)
-      error("Error in reading socket");
-	 else if(std::strlen((char *) in_buffer)==0) {
-		 std::this_thread::sleep_for(std::chrono::microseconds (kEmptyBufferSleep));
-		 timeout_counter += 1;
-	 }
-	 else if(*in_buffer[0] == '\n' && !first_newline){
-      in_message += std::string((char *) in_buffer);
-      first_newline = true;
-	 }
-	 else if (*in_buffer[0] != '\n') {
-      in_message += std::string((char *) in_buffer);
-      first_newline = false;
-   }
-	 else if(*in_buffer[0] == '\n' && first_newline);
-		 return in_message;
-	 }
-}
-*/
-
 std::string NetworkCommunicator::receive(int sockfd) {
    int n=0, timeout_counter=0;
    char *in_buffer[MSG_LEN*2];
    bzero(in_buffer, MSG_LEN*2);
-
 
    std::string in_message = std::string("");
 
@@ -140,7 +95,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
       bzero(in_buffer, MSG_LEN*2);
       n = read(sockfd, in_buffer, MSG_LEN*2);
 
-      if(n<0 || timeout_counter>5000) {
+      if(n<0 || timeout_counter>kTimeoutRetry) {
         error("Error in reading socket");
         return kDone + " \n";
       }
@@ -152,7 +107,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
          in_message += std::string((char *) in_buffer);
          timeout_counter = 1;
       }
-     // std::this_thread::sleep_for(std::chrono::milliseconds (100));
+
       // If we determine that we've got the entire message
       if(!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n"){
          //print_recv(in_message);
@@ -160,44 +115,8 @@ std::string NetworkCommunicator::receive(int sockfd) {
          return in_message;
       }
    }
-
-
-   // print_recv(in_message);
-   // We were unsuccessful, either the packet timed out, or was malformed and we are unable to continue.
-   return "";
 }
 
-std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
-   int n, timeout_counter = 0;
-   char *in_buffer[MSG_LEN * 2];
-   bzero(in_buffer, MSG_LEN * 2);
-
-
-   std::string in_message = std::string("");
-
-   // As long as data is coming in, keep reading.
-   while (true) {
-      bzero(in_buffer, MSG_LEN * 2);
-      n = read(sockfd, in_buffer, MSG_LEN * 2);
-
-      if (n<0 || timeout_counter>5000) {
-         error("E**" + debug_loc+ " " + in_message);
-         return kDone + " \n";
-      } else if (std::strlen((char *) in_buffer) == 0) {
-         std::this_thread::sleep_for(std::chrono::microseconds(kEmptyBufferSleep));
-         timeout_counter += 1;
-      } else {
-         in_message += std::string((char *) in_buffer);
-         timeout_counter = 1;
-      }
-      // If we determine that we've got the entire message
-      if (!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n") {
-        //  print_recv(in_message);
-         in_message = in_message.substr(0, in_message.length() - 1); // Strip the extra newline
-         return in_message;
-      }
-   }
-}
 int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    struct sockaddr_in serv_addr;
    struct hostent *server;
@@ -225,25 +144,7 @@ int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    return sockfd;
 }
 
-/** DEBUG -- REMOVING *//*
-std::string NetworkCommunicator::receive(int sockfd, std::string debug) {
-   int n;
-   char *in_buffer[MSG_LEN];
-   bzero(in_buffer, MSG_LEN);
-
-   std::string in_message;
-
-   n = read(sockfd, in_buffer, MSG_LEN);
-   if(n<0)
-      verbose("Error in reading socket, Called by:" + debug);
-
-   // Copy buffer out to a std::string that we can work with more easily
-   in_message = std::string((char *) in_buffer);
-   // print_recv(in_message);
-   return in_message;
-}*/
-
-std::string NetworkCommunicator::receive_no_delim(int sockfd, std::string debug) {
+std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    int n;
    char *in_buffer[MSG_LEN*2];
    bzero(in_buffer, MSG_LEN*2);
@@ -254,28 +155,13 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd, std::string debug)
    if(n<0)
       verbose("Error in reading socket, Called by:" + debug);
 
-   // Copy buffer out to a std::string that we can work with more easily
    in_message = std::string((char *) in_buffer);
    // print_recv(in_message);
-   //free(in_buffer);
    return in_message;
 }
-/*
-char *NetworkCommunicator::receive_cstr(int sockfd) {
-   int n;
-   char *in_buffer;
-   bzero(in_buffer, MSG_LEN);
-
-   n = read(sockfd, in_buffer, MSG_LEN);
-   if(n<0)
-      verbose("Error in reading socket");
-
-   return in_buffer;
-}*/
-
 
 NetworkCommunicator::~NetworkCommunicator() {
-	//Empty Destructor
+	//Empty Destructor -- Override in Subclasses
 
 }
 

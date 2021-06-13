@@ -16,13 +16,13 @@ private:
    bool local;
    bool active;
    bool lock;
-   //const char *path;
    std::string path;
-   int length, id, cookie;
+   int length, id, cookie, ttl;
    std::string hostname;
 
+
 public:
-   FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local);
+   FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl);
    FileEntry(int id, std::string hostname, int cookie, std::string path);
    int get_length();
    bool is_locked();
@@ -38,6 +38,7 @@ public:
    bool is_active();
    void set_inactive();
    void set_active();
+   void decrement_ttl();
 
 
 

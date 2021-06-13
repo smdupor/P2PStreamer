@@ -5,8 +5,8 @@
 #include <ctime>
 #include "FileEntry.h"
 
-FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local){
-   lock=true;
+// We just added this either from a config file or a remote host entry
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl){
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
@@ -14,15 +14,10 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->local = local;
    lock = false;
    length = 0;
+   ttl=7200;
 }
 
-/** Used when a file has just been downloaded to us.
- *
- * @param id
- * @param hostname
- * @param cookie
- * @param path
- */
+// We just downloaded this
 FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path){
    this->id = id;
    this->cookie = cookie;
@@ -30,6 +25,7 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path)
    this->path = path;
    local = true;
    lock = false;
+   this->ttl = ttl;
 }
 
 int FileEntry::get_length(){
@@ -86,6 +82,12 @@ void FileEntry::set_active() {
    active = true;
 }
 
+void FileEntry::decrement_ttl() {
+   ttl -= 30;
+   if(ttl < 0)
+      ttl = 0;
+}
+
 /* Specialized tostring that returns the messaging-standardized format
  * Example:
  * Tokenized:
@@ -98,12 +100,11 @@ void FileEntry::set_active() {
  * [6] <file identifier>
  * [7] TTL:
  * [8] <TTL value>
- * [11] <cr><lf>
+ * [9] <cr><lf>
  */
 std::string FileEntry::to_msg() {
-   return  " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname + " FileID: " + std::to_string(id) + " \n";
-
-
+   return  " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname + " FileID: " + std::to_string(id) +
+      " TTL: " + std::to_string(ttl) + " \n";
 }
 
 bool FileEntry::equals(int id, int cookie){
