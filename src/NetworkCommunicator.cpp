@@ -10,15 +10,13 @@
 
 int NetworkCommunicator::listener(int listen_port) {
    int sockfd; // socket descriptor
-   socklen_t clilen; //client length
-   struct sockaddr_in serv_addr, cli_addr; //socket addresses
-   sockinfo accepted_socket; // Values passed on once a connection is accepted
+   struct sockaddr_in serv_addr; //socket addresses
+
 
    // Create the socket
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    if (sockfd<0){
       error("ERROR opening socket");
-      accepted_socket.socket = -1;
       return -1;
    }
 
@@ -36,7 +34,6 @@ int NetworkCommunicator::listener(int listen_port) {
    // Listen for new connections
    verbose("LISTENING FOR CONNECTIONS on port: " + std::to_string(listen_port));
    listen(sockfd,12);
-   clilen = sizeof(cli_addr);
    return sockfd;
 }
 
@@ -131,7 +128,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
 */
 
 std::string NetworkCommunicator::receive(int sockfd) {
-   int n=0, timeout_counter=0, bytes_imm=0, past_bytes_read=0;
+   int n=0, timeout_counter=0;
    char *in_buffer[MSG_LEN*2];
    bzero(in_buffer, MSG_LEN*2);
 
@@ -143,7 +140,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
       bzero(in_buffer, MSG_LEN*2);
       n = read(sockfd, in_buffer, MSG_LEN*2);
 
-      if(timeout_counter>200) {
+      if(n<0 || timeout_counter>5000) {
         error("Error in reading socket");
         return kDone + " \n";
       }
@@ -171,7 +168,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
 }
 
 std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
-   int n = 0, timeout_counter = 0, bytes_imm = 0, past_bytes_read = 0;
+   int n, timeout_counter = 0;
    char *in_buffer[MSG_LEN * 2];
    bzero(in_buffer, MSG_LEN * 2);
 
@@ -183,7 +180,7 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
       bzero(in_buffer, MSG_LEN * 2);
       n = read(sockfd, in_buffer, MSG_LEN * 2);
 
-      if (timeout_counter>200) {
+      if (n<0 || timeout_counter>5000) {
          error("E**" + debug_loc+ " " + in_message);
          return kDone + " \n";
       } else if (std::strlen((char *) in_buffer) == 0) {
@@ -193,7 +190,6 @@ std::string NetworkCommunicator::receive(int sockfd, std::string debug_loc) {
          in_message += std::string((char *) in_buffer);
          timeout_counter = 1;
       }
-      // std::this_thread::sleep_for(std::chrono::milliseconds (100));
       // If we determine that we've got the entire message
       if (!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n") {
         //  print_recv(in_message);

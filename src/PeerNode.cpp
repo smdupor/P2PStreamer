@@ -34,8 +34,8 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
    activeNow = true;
    TTL=ttl;
    dead_count = 0;
-   timeReg = NULL;
-   reg_count = NULL;
+   timeReg = -1;
+   reg_count = -1;
    lock_access = false;
 }
 

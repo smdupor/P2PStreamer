@@ -53,7 +53,7 @@ private:
    const char *reg_serv;
    std::string hostname, path_prefix;
    int ttl, cookie, timeout_counter;
-   int expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
+   size_t expected_qty, local_qty, system_wide_qty; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
    bool system_on;
    std::list<LogItem> logs;
@@ -81,6 +81,12 @@ public:
    void downloader();
    inline void download_file(std::list<FileEntry>::iterator &want_file);
    bool get_system_on();
+   void write_time_log();
+   void downloader_backoff(size_t past_local_qty, int backoff_time);
+   void shutdown_system();
+   void add_file_entry(const std::vector<std::string> &tokens);
+   std::_List_iterator<FileEntry> find_wanted_file();
+   std::_List_iterator<FileEntry> &update_database(std::_List_iterator<FileEntry> &want_file);
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */

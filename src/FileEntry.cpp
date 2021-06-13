@@ -32,18 +32,6 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path)
    lock = false;
 }
 
-std::ifstream& FileEntry::get_ifstream(){
-   /*if(lock)
-      return std::ifstream("");  // fail in case of file being locked.
-   lock = true;*/
-  // return std::ifstream(path, std::ios::in);
-}
-std::ofstream& FileEntry::get_ofstream(){
- //  if(lock)
-//      return std::ofstream((const char *) '\0', std::ios::out); // fail in case of file being locked.
-  // lock = true;
-  // return std::ofstream(path, std::ios::out);
-}
 int FileEntry::get_length(){
    return length;
 }

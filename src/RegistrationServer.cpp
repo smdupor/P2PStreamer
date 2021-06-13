@@ -28,7 +28,7 @@ RegistrationServer::~RegistrationServer() {
 void RegistrationServer::start(){
 	int sockfd; // socket descriptor
 	socklen_t clilen; //client length
-	struct sockaddr_in serv_addr, cli_addr; //socket addresses
+	struct sockaddr_in cli_addr; //socket addresses
 	sockinfo accepted_socket; // Values passed on once a connection is accepted
 
 	sockfd = listener(this->port);
@@ -63,19 +63,10 @@ void RegistrationServer::start(){
 }
 
 int RegistrationServer::accept_reg(sockinfo sock){
-	// Initialize buffers
-	const char * in_buffer[MSG_LEN], *out_buffer;
-	bzero(in_buffer, MSG_LEN);
-   int timeout_counter = 0;
-
-	// Initialize control variables and message strings
-	int n;
-
 	std::string in_message, out_message;
-
    in_message = receive(sock.socket);
+
    std::vector<std::string> messages = split((const std::string &) in_message, '\n');
-   error("messages qty:" + std::to_string(messages.size()));
 
       for(std::string &message : messages) {
          verbose(std::string(message + "Length: " + std::to_string(message.length())));

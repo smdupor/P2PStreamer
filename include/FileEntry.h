@@ -24,8 +24,6 @@ private:
 public:
    FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local);
    FileEntry(int id, std::string hostname, int cookie, std::string path);
-   std::ifstream& get_ifstream();
-   std::ofstream& get_ofstream();
    int get_length();
    bool is_locked();
    void set_lock();

@@ -12,9 +12,9 @@
 #include "P2PClient.h"
 
 int main(int argc, char *argv[]) {
-   int listen_socket, newsockfd;
+   int listen_socket;
    socklen_t clilen; //client length
-   struct sockaddr_in serv_addr, cli_addr; //socket addresses
+   struct sockaddr_in cli_addr; //socket addresses
 
    std::vector<std::unique_ptr<std::thread>> threads;
 
@@ -28,7 +28,8 @@ int main(int argc, char *argv[]) {
    std::cin >> server_id;*/
    if(server_id.length()==1)
       server_id = "localhost";
-      std::string logfile = "logs/" + std::string(argv[1]) + ".csv";
+
+   std::string logfile = "logs/" + std::string(argv[1]) + ".csv";
    P2PClient client = P2PClient(server_id, logfile, true);
 
    //std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
