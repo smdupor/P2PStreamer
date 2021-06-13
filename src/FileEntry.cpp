@@ -86,10 +86,24 @@ void FileEntry::set_active() {
    active = true;
 }
 
+/* Specialized tostring that returns the messaging-standardized format
+ * Example:
+ * Tokenized:
+ * [0] Control Port (NOT SET HERE, SET IN CALLER FUNCTION)
+ * [1] Cookie:
+ * [2] <cookie ID>
+ * [3] Host:
+ * [4] <hostname>
+ * [5] FileID:
+ * [6] <file identifier>
+ * [7] TTL:
+ * [8] <TTL value>
+ * [11] <cr><lf>
+ */
 std::string FileEntry::to_msg() {
-   return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
+   return  " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname + " FileID: " + std::to_string(id) + " \n";
 
-   ///////////////////TODO Remove CTIME include
+
 }
 
 bool FileEntry::equals(int id, int cookie){

@@ -70,22 +70,22 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
          // Split into tokens
          std::vector<std::string> tokens = split((const std::string &) message, ' ');
          if (tokens[0] == kCliRegAck) { // Welcome to system, here is your ID info
-            hostname = tokens[2];
-            cookie = stoi(tokens[4]);
+            hostname = tokens[4];
+            cookie = stoi(tokens[2]);
             this->port = stoi(tokens[6]);
             this->ttl = stoi(tokens[8]);
          }
          else if (tokens[0] == kPeerListItem) { // We have been sent a peer list node item
             // Check to ensure this item is not me
 
-            if (cookie != stoi(tokens[4])) {
+            if (cookie != stoi(tokens[2])) {
                // check to see if we have it
                auto p = std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
-                  return node.equals(stoi(tokens[4]));
+                  return node.equals(stoi(tokens[2]));
                });
                if (p == peers.end() && tokens[10] == "TRUE") { // We don't have it, and it's an active host
 
-                  peers.push_back(PeerNode(tokens[2], stoi(tokens[4]), stoi(tokens[6]), stoi(tokens[8])));
+                  peers.push_back(PeerNode(tokens[4], stoi(tokens[2]), stoi(tokens[6]), stoi(tokens[8])));
                   lock = false;
                } else if (tokens[10] == "TRUE") { // We have it, and it's active
                   p->set_active(stoi(tokens[8]));
@@ -248,7 +248,7 @@ void P2PClient::accept_download_request(int sockfd) {
          //return " FileID: " + std::to_string(id) + " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname +  " \n";
          // [2] file id, [4] cookie, [6] hostname
          auto want_file = *std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
-            return f.equals(stoi(tokens[2]), this->cookie);
+            return f.equals(stoi(tokens[6]), this->cookie);
          });
 
          transmit_file(sockfd, want_file);
@@ -340,10 +340,10 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
                /////////////////TODO Define tokens[] in commments////////////////
                // If it's a file index item, and not one of my local ones, check if we have it and add if not.
                if (tokens[0] == kIndexItem) {
-                  //&& stoi(tokens[4]) != cookie
+
                   // check to see if we have it
                   auto file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
-                     return f.equals(stoi(tokens[2]), stoi(tokens[4])); // tokens[2] = id, tokens[4] = cookie
+                     return f.equals(stoi(tokens[6]), stoi(tokens[2]));
                   });
 
                   // We don't have it, need to add it
@@ -380,9 +380,9 @@ std::_List_iterator<FileEntry> P2PClient::find_wanted_file() {
 }
 
 void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
-   std::string temp_path = path_prefix + "rfc" + tokens[2] + ".txt";
-   int temp_id = stoi(tokens[2]);
-   int temp_cookie = stoi(tokens[4]);
+   std::string temp_path = path_prefix + "rfc" + tokens[6] + ".txt";
+   int temp_id = stoi(tokens[6]);
+   int temp_cookie = stoi(tokens[2]);
 
    bool temp_local = false;
 
@@ -399,7 +399,7 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
 
    lock = true;
    // Add to the database. tokens[6] contains the hostname.
-   files.push_back(FileEntry(temp_id, tokens[6],
+   files.push_back(FileEntry(temp_id, tokens[4],
                              temp_cookie, temp_path, temp_local));
    lock = false;
 

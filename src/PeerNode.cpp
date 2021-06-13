@@ -56,10 +56,10 @@ std::string PeerNode::toS() {
  * " Host: bob.alice.com Cookie: 432 Port: 1234 TTL: 300 \n"
  * Tokenized:
  * [0] Control Port (NOT SET HERE, SET IN CALLER FUNCTION)
- * [1] Host:
- * [2] <hostname>
- * [3] Cookie:
- * [4] <cookie ID>
+ * [1] Cookie:
+ * [2] <cookie ID>
+ * [3] Host:
+ * [4] <hostname>
  * [5] Port:
  * [6] <port number>
  * [7] TTL:
@@ -69,17 +69,15 @@ std::string PeerNode::toS() {
  * [11] <cr><lf>
  */
 std::string PeerNode::to_msg() {
-	std::string value = "";
+	std::string message = " Cookie: " + std::to_string(cookie) + " Host: " + hostname + " Port: " + std::to_string(port)
+                         + " TTL: " + std::to_string(TTL) ;
 	if (activeNow){
-		value = " Host: " + hostname + " Cookie: " + std::to_string(cookie) + " Port: " + std::to_string(port)
-				+ " TTL: " + std::to_string(TTL) + " Active: TRUE" + " \n";
+		message +=   " Active: TRUE \n";
 	}
 	else {
-      value = " Host: " + hostname + " Cookie: " + std::to_string(cookie) + " Port: " + std::to_string(port)
-              + " TTL: " + std::to_string(TTL) + " Active: FALSE" + " \n";
+      message += " Active: FALSE \n";
    }
-
-	return value;
+	return message;
 }
 
 // Reset TTL when an active signal is received
