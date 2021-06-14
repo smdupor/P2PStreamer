@@ -110,7 +110,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
 
       // If we determine that we've got the entire message
       if(!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n"){
-         //print_recv(in_message);
+         print_recv(in_message);
          in_message = in_message.substr(0, in_message.length()-1); // Strip the extra newline
          return in_message;
       }
@@ -156,7 +156,7 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd) {
       verbose("Error in reading socket, Called by:" + debug);
 
    in_message = std::string((char *) in_buffer);
-   // print_recv(in_message);
+    print_recv(in_message);
    return in_message;
 }
 
@@ -164,31 +164,6 @@ NetworkCommunicator::~NetworkCommunicator() {
 	//Empty Destructor -- Override in Subclasses
 
 }
-
-/*************************Printers. For convenience, here is the ansi code chart:************
- * Name            FG  BG
-Black           30  40
-Red             31  41
-Green           32  42
-Yellow          33  43
-Blue            34  44
-Magenta         35  45
-Cyan            36  46
-White           37  47
-Bright Black    90  100
-Bright Red      91  101
-Bright Green    92  102
-Bright Yellow   93  103
-Bright Blue     94  104
-Bright Magenta  95  105
-Bright Cyan     96  106
-Bright White    97  107
- *
- *
- *
- */
-
-
 
 void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
    std::cout << "\033[32m" << input << "\033[0m";

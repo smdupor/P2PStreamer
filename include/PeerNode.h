@@ -23,7 +23,7 @@ private:
 	int port;
 	int reg_count;
 	time_t timeReg;
-	int dead_count;
+	int dead_count, ttl_drop_counter;
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    bool lock_access;
@@ -52,6 +52,8 @@ public:
 	bool equals(PeerNode *);
 	bool equals(std::string);
 	bool equals(int);
+	bool drop_entry();
+	void increment_drop_counter();
 	std::string get_address();
 	int get_port();
 	int get_cookie();

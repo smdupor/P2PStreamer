@@ -12,28 +12,35 @@
 #include "P2PClient.h"
 
 int main(int argc, char *argv[]) {
-   int listen_socket;
-   socklen_t clilen; //client length
-   struct sockaddr_in cli_addr; //socket addresses
-
-   std::vector<std::unique_ptr<std::thread>> threads;
-
-   if(argc != 3)
+   if(argc < 3) {
+      NetworkCommunicator::error("INVALID ARGUMENTS. Run command as: ./Client <letter code> <Registration Server Hostname>, "
+                                 "e.g. './Client a 192.168.1.31\n");
       return EXIT_FAILURE;
+   }
 
    char choose = argv[1][0];
+   bool verbosity = false;
    std::string server_id = std::string(argv[2]);
-/*
-   std::cout << "Enter Server ID ('0' for localhost): ";
-   std::cin >> server_id;*/
-   if(server_id.length()==1)
-      server_id = "localhost";
+
+   if(server_id == "127.0.0.1" || server_id == "localhost") {
+      NetworkCommunicator::warning("You have selected a localhost loopback address for the registration server. \n"
+                                   "Your publicly-available IP address will not be detected properly unless ALL clients\n"
+                                   "are running on the localhost, and this client will not be able to communicate with"
+                                   "clients on other hosts. Do you want to select a different IP/Hostname? (y/n): ");
+      char ip_choice;
+      std::cin >> ip_choice;
+      if(ip_choice=='y'){
+         NetworkCommunicator::warning("Enter the new hostname/IP address: ");
+         std::cin >> server_id;
+      }
+   }
+
+   if (argc == 4 && *argv[4] == 'v'){
+      verbosity = true;
+   }
 
    std::string logfile = "logs/" + std::string(argv[1]) + ".csv";
-   P2PClient client = P2PClient(server_id, logfile, true);
-
-   //std::cout << "Which client would you like to simulate? (A, B, C, D, E):";
-   //std::cin >> choose;
+   P2PClient client = P2PClient(server_id, logfile, verbosity);
 
    std::cout << "Starting Client with Code:   " << choose<<"   \n";
 
@@ -50,9 +57,12 @@ int main(int argc, char *argv[]) {
       case 'E': client.start("conf/e.conf"); break;
       case 'f': client.start("conf/f.conf"); break;
       case 'F': client.start("conf/f.conf"); break;
-      default: std::cout<<"Defaulting to Client A";client.start("conf/a.conf"); break;
+      default:
+         NetworkCommunicator::error("INVALID ARGUMENTS. Run command as: ./Client <letter code> <Registration Server Hostname>, "
+                                    "e.g. './Client a 192.168.1.31\n");
+         return EXIT_FAILURE;
+         break;
    }
-
 
    std::thread keep_alive_thread = std::thread(&P2PClient::keep_alive, &client);
    keep_alive_thread.detach();
@@ -60,7 +70,9 @@ int main(int argc, char *argv[]) {
    std::thread downloader_thread = std::thread(&P2PClient::downloader, &client);
    downloader_thread.detach();
 
-   listen_socket = client.listener(client.get_port());
+   socklen_t clilen;
+   struct sockaddr_in cli_addr;
+   int listen_socket = client.listener(client.get_port());
 
    while(client.get_system_on()){
       int new_sockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
@@ -70,6 +82,6 @@ int main(int argc, char *argv[]) {
 
    close(listen_socket);
 
-   std::cout << "*********************System is exiting successfully*********************\n";
+   NetworkCommunicator::warning("***************System is exiting successfully***********\n");
 		return EXIT_SUCCESS;
 }

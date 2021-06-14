@@ -22,6 +22,7 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port) {
 	TTL=7200;
 	dead_count = 0;
 	lock_access = false;
+	ttl_drop_counter=0;
 }
 
 //Constructor for PeerNodes that is used by the P2P clients system. registration time and count are not used, and set
@@ -36,6 +37,7 @@ PeerNode::PeerNode(std::string hostname, int cookie, int port, int ttl) {
    timeReg = -1;
    reg_count = -1;
    lock_access = false;
+   ttl_drop_counter = 0;
 }
 
 //To_string functionality
@@ -94,7 +96,7 @@ void PeerNode::dec_ttl() {
 void PeerNode::set_active(int ttl) {
    this->TTL = ttl;
    this->activeNow = true;
-
+   this->ttl_drop_counter = 0;
    // If host has actually timed out, make it inactive.
    if(this->TTL <= 0)
       set_inactive();
@@ -185,4 +187,15 @@ void PeerNode::lock() {
 
 void PeerNode::unlock() {
    lock_access = false;
+}
+
+bool PeerNode::drop_entry() {
+
+   if(ttl_drop_counter > kTTLDec)
+      return true;
+   return false;
+}
+
+void PeerNode::increment_drop_counter() {
+   ++ttl_drop_counter;
 }

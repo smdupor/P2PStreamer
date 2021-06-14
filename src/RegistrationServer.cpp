@@ -6,6 +6,7 @@
  */
 
 #include "RegistrationServer.h"
+std::mutex peerlist_lock;
 
 // Constructor to initialize the registration server and set up logging
 RegistrationServer::RegistrationServer(std::string logfile, bool verbose_debug) : NetworkCommunicator() {
@@ -54,8 +55,6 @@ void RegistrationServer::start(){
 		if (accepted_socket.socket < 0){
 			verbose("Error on accepting connection");
 		}
-		//Let client close the conn
-		// close(accepted_socket.socket);
 	}
 
 	close(sockfd);
@@ -69,7 +68,6 @@ int RegistrationServer::accept_reg(sockinfo sock){
    std::vector<std::string> messages = split((const std::string &) in_message, '\n');
 
       for(std::string &message : messages) {
-         verbose(std::string(message + "Length: " + std::to_string(message.length())));
 		// Split the string by the delimiter so we can more easily use the message data
 		std::vector<std::string> tokens = split((const std::string &) message, ' ');
 
@@ -116,7 +114,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 			// tokens [2] will contain the cookie
 
 			PeerNode &p = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
-			   return node.equals(stoi(tokens[2]));});
+			   return node.equals(stoi(tokens[COOKIE]));});
 
 			p.keepAlive();
 			out_message = kDone + " \n\n";
@@ -125,26 +123,25 @@ int RegistrationServer::accept_reg(sockinfo sock){
 		else if(tokens[0] == kLeave) { // Client is leaving the system
 			// tokens[2] will contain the cookie
          PeerNode &p = *std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
-            return node.equals(stoi(tokens[2]));});
+            return node.equals(stoi(tokens[COOKIE]));});
 			p.leave();
-			error(p.toS() + " Is Leaving\n");
+			verbose(p.toS() + " Is Leaving\n");
          int killsockfd = outgoing_connection(p.get_address(), p.get_port());
+         out_message = kDone + " \n\n";
+         transmit(killsockfd, out_message);
          close(killsockfd);
-			out_message = kDone + "\n\n";
+
          transmit(sock.socket, out_message);
 
          // Shutdown the reg serv if experiment is over & everyone is gone.
          if(!std::any_of(peers.begin(), peers.end(), [&](PeerNode &p){return p.active();})){
             system_on = false;
-            /*int selfkillsockfd = outgoing_connection("localhost", this->port);
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            close(selfkillsockfd);*/
             return 1;
          }
 		}
       else if(tokens[0] == kGetPeerList) { // Registered client wants the list of peers
          std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
-            return node.equals(stoi(tokens[2]));})->keepAlive();
+            return node.equals(stoi(tokens[COOKIE]));})->keepAlive();
 
          for(PeerNode p : peers) { //Transmit each
             out_message = kPeerListItem + p.to_msg();
@@ -158,11 +155,6 @@ int RegistrationServer::accept_reg(sockinfo sock){
 			error("We received an invalid message. Dropping connection.");
 		}
 	} //foreach
-
-	// Loop has exited; we are done, close socket
-	//close(sock.socket);
-	// Let client close socket.
-	//////////////////TODO Change return type
 	return 0;
 }
 
@@ -172,34 +164,36 @@ std::string RegistrationServer::create_new_peer(sockinfo sock) {
 	++latest_cookie;
 	p.set_inactive();
 
+	peerlist_lock.lock();
 	// Add to list of peers
 	peers.push_back(p);
+   peerlist_lock.unlock();
 
 	// Return the messagized version
 	return p.to_msg();
 }
 
 void RegistrationServer::ttl_decrementer() {
-   int seconds = kTTLDec;
-   int temp = 0;
+   int seconds_counter = 0;
 	while(system_on) {
-	   if(temp < seconds){
-	      ++temp;
+	   if(seconds_counter < kTTLDec){
+	      ++seconds_counter;
 	      std::this_thread::sleep_for(std::chrono::seconds(1));
 	   } else {
-         std::cout << "TTL Decrementation \n";
          for (PeerNode &p : peers) {
-            p.decTTL(seconds);
-            std::cout << p.toS() << "\n";
+            p.decTTL(kTTLDec);
          }
-         temp = 0;
+         seconds_counter = 0;
       }
+	   for(PeerNode &p : peers){
+	      if(!p.active()){
+            p.increment_drop_counter();
+	      }
+	   }
+	   peerlist_lock.lock();
+      peers.remove_if([&](PeerNode &p) {return p.drop_entry();});
+      peerlist_lock.unlock();
+
 	}
 
 }
-/*
-void RegistrationServer::ttl_decrementer() {
-   ttl_decrementer(30);
-}
-
-*/

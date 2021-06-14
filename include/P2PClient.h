@@ -35,6 +35,13 @@
 #include "FileEntry.h"
 
 struct LogItem {
+
+   int listen_socket;
+   socklen_t clilen; //client length
+   struct sockaddr_in cli_addr; //socket addresses
+
+
+
    explicit LogItem(size_t qty) {
          this->qty = qty;
          this->time = std::chrono::steady_clock::now();

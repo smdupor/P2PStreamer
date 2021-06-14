@@ -10,7 +10,7 @@
 #include "NetworkCommunicator.h"
 #include "P2PClient.h"
 
-std::mutex downloader_lock, files_lock, regserv_lock;
+std::mutex downloader_lock, files_lock, regserv_lock, client_peerlist_lock;
 
 P2PClient::P2PClient(std::string &addr_reg_serv, std::string &logfile, bool verbose) {
 	reg_serv = (const char *) addr_reg_serv.c_str();
@@ -46,10 +46,11 @@ void P2PClient::start(std::string config_file) {
 
 inline void P2PClient::get_peer_list(int sockfd, bool registration) {
    // Initialize control variables and message strings
-   downloader_lock.lock();
+
    std::string in_message, out_message;
    // Reset registration keepalive counter
-
+   client_peerlist_lock.lock();
+   downloader_lock.lock();
    if(registration && cookie == -1){ // This is a new registration
       out_message = kCliRegister + " NEW \n\n";
       transmit(sockfd, out_message);
@@ -98,9 +99,11 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
          }
          else if (tokens[CONTROL] == kDone) { // List is finished downloading
             downloader_lock.unlock();
+            client_peerlist_lock.unlock();
             return;
          }
       }
+
 }
 
 void P2PClient::keep_alive() {
@@ -129,6 +132,14 @@ void P2PClient::keep_alive() {
          }
          file_ttl_counter = 0;
       }
+      for(PeerNode &p : peers){
+         if(!p.active()){
+            p.increment_drop_counter();
+         }
+      }
+      client_peerlist_lock.lock();
+      peers.remove_if([&](PeerNode &p) {return p.drop_entry();});
+      client_peerlist_lock.unlock();
    }
 }
 
@@ -434,11 +445,11 @@ void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {//
       warning("**********************  PAUSING *****************************\n\n");
       std::string warn_message = " I noticed that nothing new has become available for download in 10 seconds. "
                                  "For the purpose of \n this assignment submission and your convenience, I have paused the loop"
-                                 " that requests peer lists  and attempts\n to download files. The threads that accept connections and"
-                                 " handle TTL\n Keepalives are still running, "
-                                 "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 20 more seconds.\n\n"
-                                 "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the"
-                                 "Registration Server), enter 'n'. RESUME DOWNLOAD LOOP? (y/n): ";
+                                 " that requests peer lists \nand attempts to download files. The threads that accept connections and"
+                                 " handle TTL\n Keep-alives are still running, "
+                                 "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 10 more seconds.\n\n"
+                                 "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the "
+                                 "Registration Server), enter 'n'.\n\n RESUME DOWNLOAD LOOP? (y/n): ";
       warning(warn_message);
       char choice;
       std::cin >> choice;

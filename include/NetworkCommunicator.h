@@ -64,8 +64,6 @@ protected:
 	bool debug;
 	std::time_t start_time;
 
-
-
 	virtual void ttl_decrementer();
 	std::vector<std::string> split(const std::string &input, char delim);
    void transmit(int sockfd, std::string &out_message);
@@ -74,15 +72,14 @@ protected:
    std::string receive_no_delim(int sockfd);
    void print_sent(std::string input);
    void print_recv(std::string input);
-   void error(std::string input);
    void verbose(std::string input);
-   void warning(std::string input);
-
 
 public:
 	virtual ~NetworkCommunicator();
    int listener(int listen_port);
    int get_port();
+   static void error(std::string input);
+   static void warning(std::string input);
 };
 
 #endif /* INCLUDE_NETWORKCOMMUNICATOR_H_ */

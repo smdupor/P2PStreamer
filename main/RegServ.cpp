@@ -8,20 +8,21 @@
 #include <thread>
 #include "RegistrationServer.h"
 
-int main(void) {
-	RegistrationServer server = RegistrationServer("NoLogFile.txt", true);
+int main(int argc, char *argv[]) {
+   bool verbosity = false;
+   if (argc == 2 && *argv[2] == 'v'){
+      verbosity = true;
+   }
+   NetworkCommunicator::warning("Starting Registration Server.\n");
 
+	RegistrationServer server = RegistrationServer("NoLogFile.txt", verbosity);
 
    std::thread ttl_dec_thread = std::thread(&RegistrationServer::ttl_decrementer, &server);
    ttl_dec_thread.detach();
 
    server.start();
-	//std::thread serv_thread(&RegistrationServer::start, &server);
-	//serv_thread.detach();
 
-	//ttl_dec_thread.join();
-	std::cout << "All Hosts are gone; Exit clean/success.";
-
+	NetworkCommunicator::warning("********** All Hosts are gone; Exit clean/success ************");
 	return EXIT_SUCCESS;
 }
 
