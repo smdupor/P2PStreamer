@@ -33,8 +33,8 @@ all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
  	#ssh 192.168.1.145 'rm ~/P2PStreamer/logs/*.csv
 	#ssh 192.168.1.31 rm ~/P2PStreamer/bin/*
 	#ssh 192.168.1.131 rm ~/P2PStreamer/logs/*.csv
-	scp -r bin/ 192.168.1.145:~/P2PStreamer/
-	scp -r bin/ 192.168.1.31:~/P2PStreamer/
+	#scp -r bin/ 192.168.1.145:~/P2PStreamer/
+	#scp -r bin/ 192.168.1.31:~/P2PStreamer/
 	@echo "****************************************************************************"
 	@echo "DONE. Start server using ./bin/RegServ , then start clients with ./bin/Client"
 	@echo "****************************************************************************"

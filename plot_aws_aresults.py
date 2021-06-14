@@ -3,12 +3,12 @@ import pandas as pd
 import glob
 import sys
 
-path = 'logs/aws_a/'
+path = 'logs/aws_b/'
 all_files = glob.glob(path + "*.csv")
 #all_files = ("logs/a.csv", "logs/b.csv", "logs/c.csv", "logs/d.csv", "logs/e.csv")
 for file in all_files:
     lbl = "Host " + file[11:12]
-    df = pd.read_csv(file, index_col=0)
+    df = pd.read_csv(file, index_col=1)
     #print(df)
     plt.plot(df, label=lbl)
 
