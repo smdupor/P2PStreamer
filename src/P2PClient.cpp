@@ -212,13 +212,14 @@ void P2PClient::accept_download_request(int sockfd) {
 
       // Client is requesting the index
       if (tokens[CONTROL] == kGetIndex) {
+         files_lock.lock();
          for (FileEntry file : files) {
             out_message = kIndexItem + file.to_msg();
             transmit(sockfd, out_message);
          }
          out_message = kDone + " \n\n";
          transmit(sockfd, out_message);
-
+         files_lock.unlock();
          std::this_thread::sleep_for(std::chrono::seconds(2));
 
          return;
@@ -323,7 +324,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
 
             incoming_message = receive(sockfd);
             messages = split(incoming_message, '\n');
-
+            files_lock.lock();
             for (std::string &message : messages) {
                tokens = split(message, ' ');
                // If it's a file index item, and not one of my local ones, check if we have it and add if not.
@@ -344,6 +345,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
                   error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
                         tokens[CONTROL]);
                }
+               files_lock.unlock();
             }
          }
       } else {
