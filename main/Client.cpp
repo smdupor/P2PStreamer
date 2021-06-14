@@ -42,7 +42,8 @@ int main(int argc, char *argv[]) {
    std::string logfile = "logs/" + std::string(argv[1]) + ".csv";
    P2PClient client = P2PClient(server_id, logfile, verbosity);
 
-   std::cout << "Starting Client with Code:   " << choose<<"   \n";
+   std::string start_msg =  "Starting Client with Code:   " + std::to_string(choose) + " \n";
+   NetworkCommunicator::info(start_msg);
 
    switch(choose) {
       case 'a': client.start("conf/a.conf"); break;
@@ -82,6 +83,6 @@ int main(int argc, char *argv[]) {
 
    close(listen_socket);
 
-   NetworkCommunicator::warning("***************System is exiting successfully***********\n");
+   NetworkCommunicator::info("***************System is exiting successfully***********\n");
 		return EXIT_SUCCESS;
 }

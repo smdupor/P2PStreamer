@@ -129,10 +129,11 @@ int RegistrationServer::accept_reg(sockinfo sock){
          int killsockfd = outgoing_connection(p.get_address(), p.get_port());
          out_message = kDone + " \n\n";
          transmit(killsockfd, out_message);
+         std::this_thread::sleep_for(std::chrono::microseconds(100));
          close(killsockfd);
 
          transmit(sock.socket, out_message);
-
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
          // Shutdown the reg serv if experiment is over & everyone is gone.
          if(!std::any_of(peers.begin(), peers.end(), [&](PeerNode &p){return p.active();})){
             system_on = false;

@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
    if (argc == 2 && *argv[2] == 'v'){
       verbosity = true;
    }
-   NetworkCommunicator::warning("Starting Registration Server.\n");
+   NetworkCommunicator::info("Starting Registration Server.\n");
 
 	RegistrationServer server = RegistrationServer("NoLogFile.txt", verbosity);
 
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
    server.start();
 
-	NetworkCommunicator::warning("********** All Hosts are gone; Exit clean/success ************");
+	NetworkCommunicator::info("********** All Hosts are gone; Exit clean/success ************");
 	return EXIT_SUCCESS;
 }
 

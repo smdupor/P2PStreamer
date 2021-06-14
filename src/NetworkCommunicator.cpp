@@ -126,7 +126,8 @@ int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
 
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
    if (sockfd < 0) {
-      verbose("ERROR opening socket");
+      error("Unable to open connection to: " + hostname + ". Sleeping.");
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
       return -1;
    }
 
@@ -165,21 +166,26 @@ NetworkCommunicator::~NetworkCommunicator() {
 
 }
 
-void NetworkCommunicator::print_sent(std::string input){ // Print sent data in green
+void NetworkCommunicator::print_sent(std::string input){ // Print sent data in dark yellow
+   std::cout << "\033[33m" << input << "\033[0m";
+   std::cout.flush();
+}
+
+void NetworkCommunicator::print_recv(std::string input){ // Print receved data in green
    std::cout << "\033[32m" << input << "\033[0m";
    std::cout.flush();
-}
-
-void NetworkCommunicator::print_recv(std::string input){ // Print sent data in green
-   std::cout << "\033[36m" << input << "\033[0m";
-   std::cout.flush();
 
 }
 
-void NetworkCommunicator::error(std::string input){
+void NetworkCommunicator::error(std::string input){ // bright red
    std::cout << "\033[91m" << input << "\033[0m";
 }
 
-void NetworkCommunicator::warning(std::string input) {
-   std::cout << "\033[33m" << input << "\033[0m";
+void NetworkCommunicator::warning(std::string input) { // bright yellow
+   std::cout << "\033[93m" << input << "\033[0m";
+}
+
+//cyan
+void NetworkCommunicator::info(std::string input) {
+   std::cout << "\033[36m" << input << "\033[0m";
 }

@@ -80,6 +80,7 @@ public:
    int get_port();
    static void error(std::string input);
    static void warning(std::string input);
+   static void info(std::string input);
 };
 
 #endif /* INCLUDE_NETWORKCOMMUNICATOR_H_ */

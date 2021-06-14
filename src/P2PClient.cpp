@@ -417,7 +417,7 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
 
 void P2PClient::shutdown_system() {
    system_on = false;
-   warning("****************PERFORMING SYSTEM SHUTDOWN****************\n");
+   warning("****************CLIENT LEAVING SYSTEM****************\n");
    regserv_lock.lock();
    int sockfd = outgoing_connection(reg_serv, kControlPort);
    std::string outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
@@ -452,10 +452,15 @@ void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {//
                                  "Registration Server), enter 'n'.\n\n RESUME DOWNLOAD LOOP? (y/n): ";
       warning(warn_message);
       char choice;
+      do {
       std::cin >> choice;
-      if (choice == 'n') {
+      if (choice == 'n')
          shutdown_system();
-      }
+      else if (choice == 'y')
+         milliseconds_slept = 0;
+      else
+         error("Please enter (y/n) to resume or stop: ");
+      } while(choice != 'n' && choice !='y');
     }
    }
    else {
