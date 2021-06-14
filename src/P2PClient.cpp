@@ -300,7 +300,7 @@ void P2PClient::downloader() {
 std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
    std::string outgoing_message, incoming_message;
    std::vector<std::string> messages, tokens;
-/*
+
    for(int i=0; i < 3; i++) {
       std::list<PeerNode> shuffled_peers;
       for (PeerNode &p : peers) {
@@ -311,7 +311,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
          }
       }
       std::swap(shuffled_peers, peers);
-   }*/
+   }
 
    for (PeerNode &p : peers) {
       if (p.active() && !p.locked()) {
@@ -363,14 +363,14 @@ void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
    want_file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
             return !f.is_local() && !f.is_locked();
          });
-   /*int count_non_local = 0;
+   int count_non_local = 0;
    for(FileEntry &f : files) {
       if(!f.is_local()) {
          ++count_non_local;
       }
    }
    if(count_non_local == 0){
-      return files.end();
+      want_file = files.end();
    } else {
       static constexpr double fraction { 1.0 / (RAND_MAX + 1.0) };
       int rand_selector = 1 + static_cast<int>((count_non_local) * (std::rand() * fraction));
@@ -379,8 +379,8 @@ void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
           temp = std::find_if(temp, files.end(), [&](FileEntry &f) {
             return !f.is_local() && !f.is_locked();});
       }
-      return temp;
-   }*/
+      want_file = temp;
+   }
 }
 
 void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
