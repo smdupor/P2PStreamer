@@ -52,6 +52,7 @@ private:
    std::list<FileEntry> files;
    bool system_on;
    std::list<LogItem> logs;
+   long milliseconds_slept;
 
    inline void get_peer_list(int sockfd, bool registration);
    inline void parse_config(std::string config_file);

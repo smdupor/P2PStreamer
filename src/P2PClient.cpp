@@ -10,7 +10,7 @@
 #include "NetworkCommunicator.h"
 #include "P2PClient.h"
 
-std::mutex downloader_lock, files_lock;
+std::mutex downloader_lock, files_lock, regserv_lock;
 
 P2PClient::P2PClient(std::string &addr_reg_serv, std::string &logfile, bool verbose) {
 	reg_serv = (const char *) addr_reg_serv.c_str();
@@ -20,6 +20,7 @@ P2PClient::P2PClient(std::string &addr_reg_serv, std::string &logfile, bool verb
 	start_time = (const time_t) std::time(nullptr);
 	cookie = -1;
 	system_on = true;
+	milliseconds_slept = 0;
 }
 
 P2PClient::~P2PClient() {
@@ -91,7 +92,7 @@ inline void P2PClient::get_peer_list(int sockfd, bool registration) {
                } else if(tokens[ACTIVE] == "FALSE") { // We have it, and it's inactive
                   p->set_inactive();
                   // Drop its files from the database
-                  files.remove_if([&](FileEntry f) {return f.equals(*p);});
+                  files.remove_if([&](FileEntry &f) {return f.equals(*p);});
                }
             }
          }
@@ -110,13 +111,16 @@ void P2PClient::keep_alive() {
       ++client_ttl_counter;
       ++file_ttl_counter;
       if(client_ttl_counter >= kKeepAliveTimeout) {
+         regserv_lock.lock();
          int sockfd = outgoing_connection(reg_serv, kControlPort);
          if (sockfd > 0) {
             std::string outgoing_message = kKeepAlive + " Cookie: " + std::to_string(cookie) + " \n\n";
+            transmit(sockfd, outgoing_message);
             std::string incoming_message = receive(sockfd); // swallow the ack
             close(sockfd);
             client_ttl_counter = 0;
          }
+         regserv_lock.unlock();
       }
       if(file_ttl_counter >= kFileKeepAliveTimeout) {
          for(FileEntry &f : files){
@@ -252,7 +256,9 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
    }
    infile.close();
    want_file.clear_lock();
-
+   /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
+   shutdown_system();
+   /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
 }
 
 
@@ -267,17 +273,14 @@ void P2PClient::downloader() {
    while (system_on) {
       past_local_qty = local_qty;
       // Contact the registration server and get the list of peers
+      regserv_lock.lock();
      int sockfd = outgoing_connection(reg_serv, kControlPort);
 
    if (sockfd >= 0) {
       get_peer_list(sockfd, false);
       close(sockfd);
+      regserv_lock.unlock();
       downloader_lock.lock();
-
-      // Round robin the peer list to spread load
-     /* if (rand() % 10 > 4) {
-         peers.reverse();
-      }*/
 
       auto want_file = files.begin();
       find_wanted_file(want_file);
@@ -348,16 +351,13 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
                files_lock.unlock();
             }
          }
-      } else {
-         error("DEAD SOCK 383\n");
-         p.report_down();
       }
 
       find_wanted_file(want_file);
       if (want_file != files.end()){
          break;
         }
-   } //for
+   }
    return want_file;
 }
 
@@ -405,19 +405,19 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
 }
 
 void P2PClient::shutdown_system() {
-   verbose("SyswideQty Reached:  " + std::to_string(system_wide_qty) + " " + std::to_string(files.size()) +
-         " Exiting Download Loop \n");
-   std::this_thread::sleep_for(std::chrono::seconds(3));
-
-   write_time_log();
-
+   system_on = false;
+   warning("****************PERFORMING SYSTEM SHUTDOWN****************\n");
+   regserv_lock.lock();
    int sockfd = outgoing_connection(reg_serv, kControlPort);
    std::string outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
    transmit(sockfd, outgoing_message);
-   system_on = false;
-   std::this_thread::sleep_for(std::chrono::milliseconds(500));
-   //std::string incoming_message = receive(sockfd);
+
+   std::this_thread::sleep_for(std::chrono::milliseconds(5));
    close(sockfd);
+   regserv_lock.unlock();
+   std::this_thread::sleep_for(std::chrono::seconds(3));
+
+   write_time_log();
 }
 
 void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {// We have not been able to get anything new, back off the download process
@@ -426,13 +426,31 @@ void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {//
          backoff_time *= 2;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(backoff_time));
+      milliseconds_slept += backoff_time;
       verbose("Nothing new available to download. Waiting for: " + std::to_string(((float) backoff_time) * 0.001) +
               " Seconds.");
-   } else {
-      backoff_time = 10;
+
+    if(milliseconds_slept > 12000) {
+      warning("**********************  PAUSING *****************************\n\n");
+      std::string warn_message = " I noticed that nothing new has become available for download in 10 seconds. "
+                                 "For the purpose of \n this assignment submission and your convenience, I have paused the loop"
+                                 " that requests peer lists  and attempts\n to download files. The threads that accept connections and"
+                                 " handle TTL\n Keepalives are still running, "
+                                 "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 20 more seconds.\n\n"
+                                 "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the"
+                                 "Registration Server), enter 'n'. RESUME DOWNLOAD LOOP? (y/n): ";
+      warning(warn_message);
+      char choice;
+      std::cin >> choice;
+      if (choice == 'n') {
+         shutdown_system();
+      }
+    }
    }
-   error("SyswideQty " + std::to_string(system_wide_qty) + " DB SIze:" + std::to_string(files.size()) +
-         " \n");
+   else {
+      backoff_time = 10;
+      milliseconds_slept = 0;
+   }
 }
 
 void P2PClient::write_time_log() {// Dump the logfile
@@ -488,7 +506,7 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
             output_file.write(incoming_message.c_str(), incoming_message.length());
             bytes_written += incoming_message.length();
          }
-
+        // latest_download_timestamp = std::chrono::steady_clock::now();
          // Continue to get file data and write to file until we have the entire file
          while (bytes_written < end_length) {
             incoming_message = receive_no_delim(sockfd);
@@ -516,5 +534,6 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
       } else {
          error("An error occurred during the download step; Likely, a malformed packet was received.");
       }
+
    }
 }

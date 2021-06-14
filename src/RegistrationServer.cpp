@@ -119,7 +119,7 @@ int RegistrationServer::accept_reg(sockinfo sock){
 			   return node.equals(stoi(tokens[2]));});
 
 			p.keepAlive();
-			out_message = kDone + "\n\n";
+			out_message = kDone + " \n\n";
          transmit(sock.socket, out_message);
 		}
 		else if(tokens[0] == kLeave) { // Client is leaving the system

@@ -64,13 +64,11 @@ int main(int argc, char *argv[]) {
 
    while(client.get_system_on()){
       int new_sockfd = (int) accept(listen_socket, (struct sockaddr *) &cli_addr, &clilen);
-      //std::this_thread::sleep_for(std::chrono::microseconds(700));
       std::thread accept_thread(&P2PClient::accept_download_request, &client, new_sockfd);
       accept_thread.detach();
    }
 
    close(listen_socket);
-  // keep_alive_thread.join();
 
    std::cout << "*********************System is exiting successfully*********************\n";
 		return EXIT_SUCCESS;

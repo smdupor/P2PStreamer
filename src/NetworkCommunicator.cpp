@@ -204,3 +204,7 @@ void NetworkCommunicator::print_recv(std::string input){ // Print sent data in g
 void NetworkCommunicator::error(std::string input){
    std::cout << "\033[91m" << input << "\033[0m";
 }
+
+void NetworkCommunicator::warning(std::string input) {
+   std::cout << "\033[33m" << input << "\033[0m";
+}

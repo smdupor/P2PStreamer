@@ -34,7 +34,7 @@ protected:
    const int kInitialTTL = 7200;
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in PeerNode.h
    const int MSG_LEN = 1024; // Size that all message buffers are initialized to
-   const int kKeepAliveTimeout = 120; // Seconds between keepalive pings
+   const int kKeepAliveTimeout = 20; // Seconds between keepalive pings
    const int kEmptyBufferSleep = 1000; // Quantity of microseconds the system should sleep for when it expects more msgs. Default to 1millisecond.
    const int kTimeoutRetry = 10000; // After ten seconds, assume we will not receive from the client.
 
@@ -76,6 +76,7 @@ protected:
    void print_recv(std::string input);
    void error(std::string input);
    void verbose(std::string input);
+   void warning(std::string input);
 
 
 public:
