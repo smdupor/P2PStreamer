@@ -14,18 +14,19 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
    this->local = local;
    lock = false;
    length = 0;
-   ttl=7200;
+   this->ttl = ttl;
 }
 
 // We just downloaded this
-FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path){
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path, int length){
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
    this->path = path;
+   this->length = length;
    local = true;
    lock = false;
-   this->ttl = ttl;
+   ttl=7200;
 }
 
 int FileEntry::get_length(){

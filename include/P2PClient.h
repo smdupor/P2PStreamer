@@ -63,7 +63,7 @@ private:
    void downloader_backoff(size_t past_local_qty, int &backoff_time);
    void shutdown_system();
    void add_file_entry(const std::vector<std::string> &tokens);
-   std::_List_iterator<FileEntry> find_wanted_file();
+   void find_wanted_file(std::_List_iterator<FileEntry> &want_file);
    std::_List_iterator<FileEntry> &update_database(std::_List_iterator<FileEntry> &want_file);
 
 public:

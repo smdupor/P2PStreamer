@@ -278,7 +278,8 @@ void P2PClient::downloader() {
          peers.reverse();
       }*/
 
-      auto want_file = find_wanted_file();
+      auto want_file = files.begin();
+      find_wanted_file(want_file);
 
       if(want_file == files.end()) {
          want_file = update_database(want_file);
@@ -299,6 +300,19 @@ void P2PClient::downloader() {
 std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
    std::string outgoing_message, incoming_message;
    std::vector<std::string> messages, tokens;
+/*
+   for(int i=0; i < 3; i++) {
+      std::list<PeerNode> shuffled_peers;
+      for (PeerNode &p : peers) {
+         if (rand() % 10 > 4) {
+            shuffled_peers.push_front(p);
+         } else {
+            shuffled_peers.push_back(p);
+         }
+      }
+      std::swap(shuffled_peers, peers);
+   }*/
+
    for (PeerNode &p : peers) {
       if (p.active() && !p.locked()) {
          int sockfd = outgoing_connection(p.get_address(), p.get_port());
@@ -337,18 +351,19 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
          p.report_down();
       }
 
-      want_file = find_wanted_file();
+      find_wanted_file(want_file);
       if (want_file != files.end()){
-         break;}
+         break;
+        }
    } //for
    return want_file;
 }
 
-std::_List_iterator<FileEntry> P2PClient::find_wanted_file() {
-   /*return std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
+   want_file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
             return !f.is_local() && !f.is_locked();
-         });*/
-   int count_non_local = 0;
+         });
+   /*int count_non_local = 0;
    for(FileEntry &f : files) {
       if(!f.is_local()) {
          ++count_non_local;
@@ -365,7 +380,7 @@ std::_List_iterator<FileEntry> P2PClient::find_wanted_file() {
             return !f.is_local() && !f.is_locked();});
       }
       return temp;
-   }
+   }*/
 }
 
 void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
@@ -398,16 +413,15 @@ void P2PClient::shutdown_system() {
    std::string outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
    transmit(sockfd, outgoing_message);
    system_on = false;
-   std::string incoming_message = receive(sockfd);
+   std::this_thread::sleep_for(std::chrono::milliseconds(500));
+   //std::string incoming_message = receive(sockfd);
    close(sockfd);
 }
 
 void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {// We have not been able to get anything new, back off the download process
    if (past_local_qty == local_qty) {
-      if (backoff_time < 1000 && backoff_time >= 100) {
+      if (backoff_time < 1000) {
          backoff_time *= 2;
-      } else {
-         backoff_time = 10;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(backoff_time));
       verbose("Nothing new available to download. Waiting for: " + std::to_string(((float) backoff_time) * 0.001) +
@@ -485,7 +499,7 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
          close(sockfd);
          peer.unlock();
          // Add the file to the database
-         files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path()));
+         files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path(), end_length));
 
          // Update our quantities
          ++local_qty;

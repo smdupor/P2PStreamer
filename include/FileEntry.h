@@ -23,7 +23,7 @@ private:
 
 public:
    FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl);
-   FileEntry(int id, std::string hostname, int cookie, std::string path);
+   FileEntry(int id, std::string hostname, int cookie, std::string path, int length);
    int get_length();
    bool is_locked();
    void set_lock();
