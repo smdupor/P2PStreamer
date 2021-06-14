@@ -6,7 +6,7 @@
 #include "FileEntry.h"
 
 // We just added this either from a config file or a remote host entry
-FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl){
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl) {
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
@@ -18,7 +18,7 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string &path
 }
 
 // We just downloaded this
-FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path, int length){
+FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path, int length) {
    this->id = id;
    this->cookie = cookie;
    this->hostname = hostname;
@@ -26,67 +26,11 @@ FileEntry::FileEntry(int id, std::string hostname, int cookie, std::string path,
    this->length = length;
    local = true;
    lock = false;
-   ttl=7200;
+   ttl = 7200;
 }
 
-int FileEntry::get_length(){
+int FileEntry::get_length() {
    return length;
-}
-bool FileEntry::is_locked(){
-   return lock;
-}
-void FileEntry::set_lock()
-{
-   lock = true;
-}
-void FileEntry::clear_lock() {
-   lock = false;
-}
-void FileEntry::set_local(){
-   local = true;
-}
-std::string FileEntry::to_s() {
-   std::string adder;
-   if(lock){
-      adder = "LOCKED-TRUE. ";
-   }else {
-      adder = "NOT locked. ";
-   }
-   if (local){
-      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: TRUE Host: " + hostname +
-             " Cookie: " + std::to_string(cookie) + adder;
-   }
-   else
-   {
-      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: FALSE Host: " + hostname +
-             " Cookie: " + std::to_string(cookie) + adder;
-   }
-
-}
-
-bool FileEntry::equals(PeerNode &p) {
-   if(p.get_cookie() == this->cookie) {
-      return true;
-   }
-   return false;
-}
-
-bool FileEntry::is_active() {
-   return active;
-}
-
-void FileEntry::set_inactive() {
-   active = false;
-}
-
-void FileEntry::set_active() {
-   active = true;
-}
-
-void FileEntry::decrement_ttl() {
-   ttl -= 30;
-   if(ttl < 0)
-      ttl = 0;
 }
 
 /* Specialized tostring that returns the messaging-standardized format
@@ -104,38 +48,95 @@ void FileEntry::decrement_ttl() {
  * [9] <cr><lf>
  */
 std::string FileEntry::to_msg() {
-   return  " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname + " FileID: " + std::to_string(id) +
-      " TTL: " + std::to_string(ttl) + " \n";
+   return " Cookie: " + std::to_string(cookie) + " Hostname: " + hostname + " FileID: " + std::to_string(id) +
+          " TTL: " + std::to_string(ttl) + " \n";
 }
 
-bool FileEntry::equals(int id, int cookie){
+std::string FileEntry::to_string() {
+   std::string adder;
+   if (lock) {
+      adder = "LOCKED-TRUE. ";
+   } else {
+      adder = "NOT locked. ";
+   }
+   if (local) {
+      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: TRUE Host: " + hostname +
+             " Cookie: " + std::to_string(cookie) + adder;
+   } else {
+      return "Dir: " + std::string(path) + " Id: " + std::to_string(id) + " Local: FALSE Host: " + hostname +
+             " Cookie: " + std::to_string(cookie) + adder;
+   }
+}
+
+std::string FileEntry::get_hostname() {
+   return hostname;
+}
+
+int FileEntry::get_cookie() {
+   return cookie;
+}
+
+std::string FileEntry::get_path() {
+   return std::string(path);
+}
+
+int FileEntry::get_id() {
+   return id;
+}
+
+void FileEntry::set_length(int len) {
+   length = len;
+}
+
+void FileEntry::set_inactive() {
+   active = false;
+}
+
+void FileEntry::set_active() {
+   active = true;
+}
+
+void FileEntry::set_local() {
+   local = true;
+}
+
+void FileEntry::set_lock() {
+   lock = true;
+}
+
+void FileEntry::clear_lock() {
+   lock = false;
+}
+
+void FileEntry::decrement_ttl() {
+   ttl -= 30;
+   if (ttl < 0)
+      ttl = 0;
+}
+
+bool FileEntry::equals(PeerNode &p) {
+   if (p.get_cookie() == this->cookie) {
+      return true;
+   }
+   return false;
+}
+
+bool FileEntry::is_active() {
+   return active;
+}
+
+bool FileEntry::is_locked() {
+   return lock;
+}
+
+bool FileEntry::equals(int id, int cookie) {
    return this->id == id && this->cookie == cookie;
 }
 
-bool FileEntry::equals(int id){
+bool FileEntry::equals(int id) {
    return this->id == id;
 }
 
 bool FileEntry::is_local() {
    return local;
-}
-
-std::string FileEntry::get_hostname(){
-   return hostname;
-}
-
-int FileEntry::get_cookie(){
-   return cookie;
-}
-
-std::string FileEntry::get_path(){
-   return std::string(path);
-}
-
-int FileEntry::get_id(){
-   return id;
-}
-
-void FileEntry::set_length(int len){
-   length = len;
 }

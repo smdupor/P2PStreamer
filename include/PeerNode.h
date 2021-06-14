@@ -17,13 +17,9 @@
 class PeerNode {
 private:
 	std::string hostname;
-	int cookie; //unique id
+	int cookie, TTL, port, reg_count, dead_count, ttl_drop_counter;
 	bool activeNow;
-	int TTL;
-	int port;
-	int reg_count;
 	time_t timeReg;
-	int dead_count, ttl_drop_counter;
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    bool lock_access;
@@ -32,8 +28,15 @@ public:
 	PeerNode(std::string hostname, int cookie, int port); // Used on the registration server
    PeerNode(std::string hostname, int cookie, int port, int ttl); // Used on P2P Clients
 	virtual ~PeerNode();
-	std::string toS();
+
+	//Getters and to_strings
+	std::string to_string();
 	std::string to_msg();
+   int get_port();
+   int get_cookie();
+   std::string get_address();
+
+   //Setters
 	void keepAlive();
 	void dec_ttl();
 	void decTTL(int seconds);
@@ -46,17 +49,17 @@ public:
 	bool locked();
 	void lock();
 	void unlock();
+   void increment_drop_counter();
 
-	// Getters
+	// Booleans
    bool active();
 	bool equals(PeerNode *);
 	bool equals(std::string);
 	bool equals(int);
 	bool drop_entry();
-	void increment_drop_counter();
-	std::string get_address();
-	int get_port();
-	int get_cookie();
+
+
+
 
 
 };

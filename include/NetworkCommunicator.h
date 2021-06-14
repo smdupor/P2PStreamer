@@ -28,7 +28,6 @@ struct sockinfo {
 class NetworkCommunicator {
 
 protected:
-
    // Declare networking constants
    const std::string kDone = "P2PDI:0.1/DONE"; // Message indicates all data for this section of program flow is done
    const int kInitialTTL = 7200;
@@ -48,7 +47,7 @@ protected:
    const std::string kKeepAlive = "P2PDI:0.1/KEEPALIVE"; // Message indicating this client is still alive
    const std::string kLeave = "P2PDI:0.1/LEAVE"; // Client indicating they are leaving the system
 
-// P2P Client constants and control methods
+   // P2P Client constants and control methods
    const std::string kGetIndex = "P2PDI:0.1/GETDILIST"; // Request from a peer asking for this peer's copy of the Distributed index
    const std::string kIndexItem = "P2PDI:0.1/LISTITEM"; // Response to a peer containing a member of the distributed index on this host
    const std::string kGetFile = "P2PDI:0.1/GETFILE"; // Request from a peer for a file located on this host
