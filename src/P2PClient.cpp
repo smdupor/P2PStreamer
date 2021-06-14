@@ -260,7 +260,7 @@ void P2PClient::downloader() {
    std::vector<std::string> messages, tokens;
    std::list<FileEntry>::iterator want_file;
    size_t past_local_qty;
-   int backoff_time = 100;
+   int backoff_time = 10;
 
    // Run Downloads as long as we don't have all the files we want
    while (system_on) {
@@ -304,7 +304,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
    for(int i=0; i < 3; i++) {
       std::list<PeerNode> shuffled_peers;
       for (PeerNode &p : peers) {
-         if (rand() % 10 > 4) {
+         if (rand() % 2 == 1) {
             shuffled_peers.push_front(p);
          } else {
             shuffled_peers.push_back(p);

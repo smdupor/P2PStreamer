@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
       accept_thread.detach();
    }
 
+   close(listen_socket);
   // keep_alive_thread.join();
 
    std::cout << "*********************System is exiting successfully*********************\n";
