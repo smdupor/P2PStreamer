@@ -30,7 +30,7 @@ class NetworkCommunicator {
 protected:
 
    // Declare networking constants
-   const std::string kDone = "DONE"; // Message indicates all data for this section of program flow is done
+   const std::string kDone = "P2PDI:0.1/DONE"; // Message indicates all data for this section of program flow is done
    const int kInitialTTL = 7200;
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in PeerNode.h
    const int MSG_LEN = 1024; // Size that all message buffers are initialized to
@@ -41,18 +41,18 @@ protected:
 // Registration server constants and methods
    const int kControlPort = 65432; // The port listening on the RS
    const int kFileKeepAliveTimeout = 30; //Interval on which we decrement file database TTLs
-   const std::string kCliRegister = "CREG"; // Client requests to register to the RS
-   const std::string kCliRegAck = "CACK"; // Response acking this client registration and providing port, cookie
-   const std::string kPeerListItem = "PEER"; // Response from RS signaling message contains data for one (active) Peer
-   const std::string kGetPeerList = "PLST"; // Registered client requesting the updated peer list
-   const std::string kKeepAlive = "ALIV"; // Message indicating this client is still alive
-   const std::string kLeave = "LEAV"; // Client indicating they are leaving the system
+   const std::string kCliRegister = "P2PDI:0.1/CLIREG"; // Client requests to register to the RS
+   const std::string kCliRegAck = "P2PDI:0.1/CLIACK"; // Response acking this client registration and providing port, cookie
+   const std::string kPeerListItem = "P2PDI:0.1/PEERITEM"; // Response from RS signaling message contains data for one (active) Peer
+   const std::string kGetPeerList = "P2PDI:0.1/GETPEERLST"; // Registered client requesting the updated peer list
+   const std::string kKeepAlive = "P2PDI:0.1/KEEPALIVE"; // Message indicating this client is still alive
+   const std::string kLeave = "P2PDI:0.1/LEAVE"; // Client indicating they are leaving the system
 
 // P2P Client constants and control methods
-   const std::string kGetIndex = "LIST"; // Request from a peer asking for this peer's copy of the Distributed index
-   const std::string kIndexItem = "LSTI"; // Response to a peer containing a member of the distributed index on this host
-   const std::string kGetFile = "GETF"; // Request from a peer for a file located on this host
-   const std::string kFileLine = "DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
+   const std::string kGetIndex = "P2PDI:0.1/GETDILIST"; // Request from a peer asking for this peer's copy of the Distributed index
+   const std::string kIndexItem = "P2PDI:0.1/LISTITEM"; // Response to a peer containing a member of the distributed index on this host
+   const std::string kGetFile = "P2PDI:0.1/GETFILE"; // Request from a peer for a file located on this host
+   const std::string kFileLine = "P2PDI:0.1/DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
 
    // Indices for value lookups in tokenized (split) messages.
    enum {CONTROL = 0, COOKIE = 2, HOSTNAME = 4, FILEID = 6, TTL = 8, PORT = 6, ACTIVE = 10};
