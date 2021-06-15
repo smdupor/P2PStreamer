@@ -48,18 +48,18 @@ protected:
 // Registration server constants and methods
    const int kControlPort = 65432; // The port listening on the RS
    const int kFileKeepAliveTimeout = 30; //Interval on which we decrement file database TTLs
-   const std::string kCliRegister = "P2PDI:0.1/CLIREG"; // Client requests to register to the RS
-   const std::string kCliRegAck = "P2PDI:0.1/CLIACK"; // Response acking this client registration and providing port, cookie
-   const std::string kPeerListItem = "P2PDI:0.1/PEERITEM"; // Response from RS signaling message contains data for one (active) Peer
-   const std::string kGetPeerList = "P2PDI:0.1/GETPEERLST"; // Registered client requesting the updated peer list
+   const std::string kCliRegister = "P2PDI:0.1/CLI_REGISTER"; // Client requests to register to the RS
+   const std::string kCliRegAck = "P2PDI:0.1/CLI_ACK"; // Response acking this client registration and providing port, cookie
+   const std::string kPeerListItem = "P2PDI:0.1/PEER_ITEM"; // Response from RS signaling message contains data for one (active) Peer
+   const std::string kGetPeerList = "P2PDI:0.1/P_QUERY"; // Registered client requesting the updated peer list
    const std::string kKeepAlive = "P2PDI:0.1/KEEPALIVE"; // Message indicating this client is still alive
    const std::string kLeave = "P2PDI:0.1/LEAVE"; // Client indicating they are leaving the system
 
    // P2P Client constants and control methods
-   const std::string kGetIndex = "P2PDI:0.1/GETDILIST"; // Request from a peer asking for this peer's copy of the Distributed index
-   const std::string kIndexItem = "P2PDI:0.1/LISTITEM"; // Response to a peer containing a member of the distributed index on this host
-   const std::string kGetFile = "P2PDI:0.1/GETFILE"; // Request from a peer for a file located on this host
-   const std::string kFileLine = "P2PDI:0.1/DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
+   const std::string kGetIndex = "P2PDI:0.1/RFC_QUERY"; // Request from a peer asking for this peer's copy of the Distributed index
+   const std::string kIndexItem = "P2PDI:0.1/RFC_ITEM"; // Response to a peer containing a member of the distributed index on this host
+   const std::string kGetFile = "P2PDI:0.1/GET_RFC"; // Request from a peer for a file located on this host
+   const std::string kFileLine = "P2PDI:0.1/RFC_DATA"; // Response from a peer indicating this message will contain a line of the file being transmitted
 
    // Indices for value lookups in tokenized (split) messages.
    enum {CONTROL = 0, COOKIE = 2, HOSTNAME = 4, FILEID = 6, TTL = 8, PORT = 6, ACTIVE = 10};
