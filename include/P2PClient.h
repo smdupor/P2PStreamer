@@ -67,7 +67,8 @@ private:
    void shutdown_system();
    void add_file_entry(const std::vector<std::string> &tokens);
    void find_wanted_file(std::_List_iterator<FileEntry> &want_file);
-   std::_List_iterator<FileEntry> &update_database(std::_List_iterator<FileEntry> &want_file);
+   void update_database(std::_List_iterator<FileEntry> &want_file);
+   void ece_573_TA_interaction();
 
 public:
    P2PClient(std::string &addr_reg_server, std::string &logfile, bool verbose);
@@ -77,6 +78,8 @@ public:
    void accept_download_request(int sockfd);
    void downloader();
    bool get_system_on();
+
+   void shuffle_peer_list();
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */

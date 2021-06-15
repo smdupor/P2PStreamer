@@ -263,7 +263,7 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
    infile.close();
    want_file.clear_lock();
    /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
-   shutdown_system();
+   shutdown_system(); // REMOVE THIS COMMAND FOR NORMAL OPERATION
    /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
 }
 
@@ -290,11 +290,11 @@ void P2PClient::downloader() {
          auto want_file = files.begin();
          find_wanted_file(want_file);
 
-         if (want_file == files.end()) {
-            want_file = update_database(want_file);
-         }
-         // Find the first file in our list that we want.
+         // If our list is entirely local files. Update the database with info from other peers
+         if (want_file == files.end())
+            update_database(want_file);
 
+         // We've found something to download (or not), proceed to attempt to download.
          download_file(want_file);
          downloader_lock.unlock();
       }
@@ -307,10 +307,52 @@ void P2PClient::downloader() {
    }
 }
 
-std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
+void P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
    std::string outgoing_message, incoming_message;
    std::vector<std::string> messages, tokens;
 
+   shuffle_peer_list();
+
+   for (PeerNode &p : peers) {
+      if (p.active() && !p.locked()) {
+         // Contact each peer until we have new items to download
+         int sockfd = outgoing_connection(p.get_address(), p.get_port());
+         if (sockfd >= 0) {
+            //Ask for the index
+            outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
+            transmit(sockfd, outgoing_message);
+            incoming_message = receive(sockfd);
+            close(sockfd);
+
+            //Split and process the messages
+            messages = split(incoming_message, '\n');
+            files_lock.lock();
+            for (std::string &message : messages) {
+               tokens = split(message, ' ');
+               if (tokens[CONTROL] == kIndexItem) {
+                  // This is an index item message, check to see if we have it
+                  auto file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
+                     return f.equals(stoi(tokens[FILEID]), stoi(tokens[COOKIE]));
+                  });
+
+                  // We don't have it, need to add it
+                  if (file == files.end())
+                     add_file_entry(tokens);
+               } else { // tokens[CONTROL] == kDone
+                  close(sockfd);
+               }
+               files_lock.unlock();
+            }
+         }
+      }
+      // Run the search again to see if there's anything new to download, if so, break out and continue to downloading.
+      find_wanted_file(want_file);
+      if (want_file != files.end())
+         break;
+   }
+}
+
+void P2PClient::shuffle_peer_list() {
    for(int i=0; i < 3; i++) {
       std::list<PeerNode> shuffled_peers;
       for (PeerNode &p : peers) {
@@ -322,77 +364,33 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
       }
       std::swap(shuffled_peers, peers);
    }
-   if(system_on) {
-   for (PeerNode &p : peers) {
-      if (p.active() && !p.locked()) {
-         int sockfd = outgoing_connection(p.get_address(), p.get_port());
-
-         if (sockfd >= 0) {
-            outgoing_message = kGetIndex + " Cookie: " + std::to_string(cookie) + " \n\n";
-            transmit(sockfd, outgoing_message);
-
-            incoming_message = receive(sockfd);
-            close(sockfd);
-            messages = split(incoming_message, '\n');
-            files_lock.lock();
-            for (std::string &message : messages) {
-               tokens = split(message, ' ');
-               // If it's a file index item, and not one of my local ones, check if we have it and add if not.
-               if (tokens[CONTROL] == kIndexItem) {
-
-                  // check to see if we have it
-                  auto file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
-                     return f.equals(stoi(tokens[FILEID]), stoi(tokens[COOKIE]));
-                  });
-
-                  // We don't have it, need to add it
-                  if (file == files.end()) {
-                     add_file_entry(tokens);
-                  }
-               } else if (tokens[CONTROL] == kDone) {
-                  close(sockfd);
-
-               } else {
-                  error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
-                        tokens[CONTROL]);
-               }
-               files_lock.unlock();
-            }
-         }
-      }
-
-      find_wanted_file(want_file);
-      if (want_file != files.end()){
-         break;
-        }
-   }}
-   else {
-      want_file = files.end();
-   }
-   return want_file;
 }
 
 void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
-   want_file = std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
-            return !f.is_local() && !f.is_locked();
-         });
+   // Run a simple search to count the number of non-locally-available files listed in index entries
    int count_non_local = 0;
    for(FileEntry &f : files) {
       if(!f.is_local()) {
          ++count_non_local;
       }
    }
+
+   // If none found, let the caller know that none were found in the same format as C++11's library std::find_if()
    if(count_non_local == 0){
       want_file = files.end();
    } else {
+      // Otherwise, perform a randomization operation to randomly select a remote file to download, by first picking
+      // a random number to iterate to within the range of available items:
       static constexpr double fraction { 1.0 / (RAND_MAX + 1.0) };
       int rand_selector = 1 + static_cast<int>((count_non_local) * (std::rand() * fraction));
-      std::_List_iterator<FileEntry> temp = files.begin();
+
+      // Then iterate through the remotely-stored items in the list this random number of times
+      std::_List_iterator<FileEntry> random_iterator = files.begin();
       for(int i = 0; i<rand_selector; i++) {
-          temp = std::find_if(temp, files.end(), [&](FileEntry &f) {
+         random_iterator = std::find_if(random_iterator, files.end(), [&](FileEntry &f) {
             return !f.is_local() && !f.is_locked();});
       }
-      want_file = temp;
+      want_file = random_iterator;
    }
 }
 
@@ -491,25 +489,7 @@ void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {//
               " Seconds.");
 
     if(milliseconds_slept > 12000) {
-      warning("**********************  PAUSING *****************************\n\n");
-      std::string warn_message = " I noticed that nothing new has become available for download in 10 seconds. "
-                                 "For the purpose of \n this assignment submission and your convenience, I have paused the loop"
-                                 " that requests peer lists \nand attempts to download files. The threads that accept connections and"
-                                 " handle TTL\n Keep-alives are still running, "
-                                 "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 10 more seconds.\n\n"
-                                 "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the "
-                                 "Registration Server), enter 'n'.\n\n RESUME DOWNLOAD LOOP? (y/n): ";
-      warning(warn_message);
-      char choice;
-      do {
-      std::cin >> choice;
-      if (choice == 'n')
-         shutdown_system();
-      else if (choice == 'y')
-         milliseconds_slept = 0;
-      else
-         error("Please enter (y/n) to resume or stop: ");
-      } while(choice != 'n' && choice !='y');
+       ece_573_TA_interaction();
     }
    }
    else {
@@ -557,4 +537,26 @@ void P2PClient::shutdown_system() {
 
 bool P2PClient::get_system_on(){
    return system_on;
+}
+
+void P2PClient::ece_573_TA_interaction() {
+   warning("**********************  PAUSING *****************************\n\n");
+   std::string warn_message = " I noticed that nothing new has become available for download in 10 seconds. "
+                              "For the purpose of \n this assignment submission and your convenience, I have paused the loop"
+                              " that requests peer lists \nand attempts to download files. The threads that accept connections and"
+                              " handle TTL\n Keep-alives are still running, "
+                              "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 10 more seconds.\n\n"
+                              "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the "
+                              "Registration Server), enter 'n'.\n\n RESUME DOWNLOAD LOOP? (y/n): ";
+   warning(warn_message);
+   char choice;
+   do {
+      std::cin >> choice;
+      if (choice == 'n')
+         shutdown_system();
+      else if (choice == 'y')
+         milliseconds_slept = 0;
+      else
+         error("Please enter (y/n) to resume or stop: ");
+   } while(choice != 'n' && choice !='y');
 }
