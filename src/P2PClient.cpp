@@ -1,7 +1,8 @@
-/*
+/**
  * P2PClient.cpp
  *
- *	Contains top-level client code for the P2P Client hosts
+ *	Contains the P2P client/server code for the file sharing nodes. Maintains the distributed index, serves files,
+ *	and requests files to download from other peers.
  *
  *  Created on: May 31, 2021
  *      Author: smdupor
@@ -294,17 +295,24 @@ void P2PClient::accept_download_request(int sockfd) {
       }
    }
 }
-
+/** Handle the transmission of a requested file to a client.
+ * THREADING: Part of the detached connection acceptance thread, called by accept_download_request()
+ *
+ * @param sockfd Socket descriptor
+ * @param want_file Reference to the entry in our local database for the file to be sent
+ */
 inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
    std::string out_message;
+   // Open the file on the hard drive.
    std::ifstream infile(want_file.get_path());
 
+   // Send the client the control character and number of bytes of payload to expect.
    out_message = kFileLine + " Length: " + std::to_string(want_file.get_length()) + " " + "\n";
    transmit(sockfd, out_message);
 
+   // Read the file and transmit it
    char buffer[MSG_LEN * 2];
    bzero(buffer, MSG_LEN * 2);
-
    while (infile.getline(buffer, MSG_LEN * 2)) {
       // Add back the newline stripped by getline()
       buffer[strlen(buffer)] = '\n';
@@ -313,12 +321,19 @@ inline void P2PClient::transmit_file(int sockfd, FileEntry &want_file) {
       bzero(buffer, MSG_LEN * 2);
    }
    infile.close();
-   want_file.clear_lock();
-   /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
+   want_file.clear_lock(); // Clear database lock
+   /******************************************************************************************************************/
+   /************ ADDED FOR SUBMISSION REQUIREMENTS (Leave after xmit one file). REMOVE FOR NORMAL OPERATION***********/
    shutdown_system(); // REMOVE THIS COMMAND FOR NORMAL OPERATION
    /******************************** ADDED FOR SUBMISSION REQUIREMENTS. REMOVE FOR NORMAL OPERATION*******************/
+   /******************************************************************************************************************/
 }
 
+/**
+ * The "Client" component of the P2P Host. Contact the registration server to get the latest peers, contact the peers
+ * to get their database, initiate download requests, and handle leaving the system. Runs in main thread for the life
+ * of the execution.
+ */
 void P2PClient::downloader() {
    std::string remote_addr, outgoing_message, incoming_message;
    std::vector<std::string> messages, tokens;
@@ -328,15 +343,17 @@ void P2PClient::downloader() {
 
    // Run Downloads as long as we don't have all the files we want
    while (system_on) {
-      past_local_qty = local_qty;
+      past_local_qty = local_qty; // Used later to determine if we have downloaded a new file
+
       // Contact the registration server and get the list of peers
       regserv_lock.lock();
       int sockfd = outgoing_connection(reg_serv, kControlPort);
-
       if (sockfd >= 0) {
          contact_registration_server(sockfd, false);
          close(sockfd);
          regserv_lock.unlock();
+
+         // Take control of the downloader lock and search to see if there are files to download.
          downloader_lock.lock();
          if (system_on) {
             auto want_file = files.begin();
@@ -350,8 +367,10 @@ void P2PClient::downloader() {
             download_file(want_file);
             downloader_lock.unlock();
          }
+         // Call the backoff which determines if we should backoff our request speed to prevent network flooding.
          downloader_backoff(past_local_qty, backoff_time);
 
+         // If all the peers across the entire ecosystem have finished propagating the files, shutdown (leave) the system.
          if (system_wide_qty == files.size()) {
             shutdown_system();
          }
@@ -359,10 +378,16 @@ void P2PClient::downloader() {
    }
 }
 
+/** Query other system peers to determine if they have files that we want to download.
+ *
+ * @param want_file Iterator reference used to indicate whether we've found anything to download
+ *                  (same format as std::find_if()
+ */
 void P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
    std::string outgoing_message, incoming_message;
    std::vector<std::string> messages, tokens;
 
+   // Run the peer randomization algorithm so we aren't always contacting the same peer first.
    shuffle_peer_list();
 
    for (PeerNode &p : peers) {
@@ -398,13 +423,18 @@ void P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
             }
          }
       }
-      // Run the search again to see if there's anything new to download, if so, break out and continue to downloading.
+      // Search again to see if there are new files available for download, if so, break and return to downloader().
       find_wanted_file(want_file);
       if (want_file != files.end())
          break;
    }
 }
 
+/**
+ * Peer randomization algorithm. In order to align with the project requirements (using a linked list to store Peers)
+ * We copy the list thrice, and randomly shuffle the entries as we put them into the new list, then swap in the new list
+ * to replace the old.
+ */
 void P2PClient::shuffle_peer_list() {
    for (int i = 0; i < 3; i++) {
       std::list<PeerNode> shuffled_peers;
@@ -419,6 +449,10 @@ void P2PClient::shuffle_peer_list() {
    }
 }
 
+/** Randomized search algorithm (replaces std::find_if()) which randomly selects a remote file to be downloaded.
+ *
+ * @param want_file Iterator that points to the address in the list where the randomly selected remote file is.
+ */
 void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
    // Run a simple search to count the number of non-locally-available files listed in index entries
    int count_non_local = 0;
@@ -437,7 +471,7 @@ void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
       static constexpr double fraction{1.0 / (RAND_MAX + 1.0)};
       int rand_selector = 1 + static_cast<int>((count_non_local) * (std::rand() * fraction));
 
-      // Then iterate through the remotely-stored items in the list this random number of times
+      // Then iterate through the remote file items in the list rand_selector number of times
       std::_List_iterator<FileEntry> random_iterator = files.begin();
       for (int i = 0; i < rand_selector; i++) {
          random_iterator = std::find_if(random_iterator, files.end(), [&](FileEntry &f) {
@@ -448,6 +482,11 @@ void P2PClient::find_wanted_file(std::_List_iterator<FileEntry> &want_file) {
    }
 }
 
+/** Create a new distributed index entry and add it to the local database.
+ *  THREADING/LOCKING: The files database modification lock is set by the caller.
+ *
+ * @param tokens Tokenized version of the message from the remote peer
+ */
 void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
    std::string temp_path = path_prefix + "rfc" + tokens[FILEID] + ".txt";
    int temp_id = stoi(tokens[FILEID]);
@@ -455,8 +494,8 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
 
    bool temp_local = false;
 
-   // if we can find A copy of the fileentry that is local, then we will note in the DB
-// that this file is also stored locally on this machine
+   // if we can find a copy of this file that is stored locally, then we will note in the DB
+   // that this file is also available locally on this machine
    for (FileEntry &temp : files) {
       if (temp.equals(temp_id) && temp.is_local()) {
          temp_local = true;
@@ -467,40 +506,45 @@ void P2PClient::add_file_entry(const std::vector<std::string> &tokens) {
                              temp_cookie, temp_path, temp_local, stoi(tokens[TTL])));
 }
 
+/** Request a specific file to download from a remote peer, and download it.
+ *
+ * @param want_file Iterator pointing to the FileEntry for the file we want to download.
+ */
 inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) {
    std::string incoming_message, outgoing_message;
    std::vector<std::string> tokens, messages;
 
+   // Check to ensure we aren't trying to request a "null" file entry and look up the Peer contact info
    if (want_file != files.end()) {
       PeerNode &peer = *std::find_if(peers.begin(), peers.end(), [&](PeerNode &node) {
          return node.equals(want_file->get_cookie());
       });
       peer.lock();
 
-      // ask for the file
+      // ask for the file from the peer
       int sockfd = outgoing_connection(peer.get_address(), peer.get_port());
       outgoing_message = kGetFile + want_file->to_msg() + "\n";
-
       transmit(sockfd, outgoing_message);
 
-      //get the control packet that tells us the lengths
+      // Get back the control packet that tells us the amount of bytes of file payload.
       incoming_message = receive_no_delim(sockfd);
       messages = split(incoming_message, '\n');
       if (messages[0].length() > 0) {
          tokens = split(messages[0], ' ');
 
+         // Set up the file IO stream to write to disk and the bytes counter.
          std::ofstream output_file(want_file->get_path());
          int end_length = stoi(tokens[2]);
          int bytes_written = 0;
 
-         // If we have gotten both the header and some data (likely) split and use the data
+         // If we have gotten both the header and some data in the first message (very likely) split, and use the data
          if (messages.size() > 1) {
             int initial_offset = messages[0].length() + 1;
             incoming_message = incoming_message.substr(initial_offset);
             output_file.write(incoming_message.c_str(), incoming_message.length());
             bytes_written += incoming_message.length();
          }
-         // latest_download_timestamp = std::chrono::steady_clock::now();
+
          // Continue to get file data and write to file until we have the entire file
          while (bytes_written < end_length) {
             incoming_message = receive_no_delim(sockfd);
@@ -512,14 +556,16 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
          want_file->clear_lock();
          close(sockfd);
          peer.unlock();
-         // Add the file to the database
+         // Add an entry for the file to the database
          files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path(), end_length));
 
-         // Update our quantities
+         // Update our quantity of files on hard disk.
          ++local_qty;
+
+         // Log the elapsed time for this download
          local_time_logs.push_back(LogItem(local_qty));
 
-         // Check through the database and mark any entries of this file as also-locally-available.
+         // Check through the database and mark any remote entries of this file as also-locally-available.
          for (FileEntry &f : files) {
             if (f.get_id() == want_file->get_id()) {
                f.set_local();
@@ -528,12 +574,17 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
       } else {
          error("An error occurred during the download step; Likely, a malformed packet was received.");
       }
-
    }
 }
 
-void P2PClient::downloader_backoff(size_t past_local_qty,
-                                   int &backoff_time) {// We have not been able to get anything new, back off the download process
+/** Timing method to back off the rate at which we poll the registration server when we've been unsuccessful at finding
+ * any new files download.
+ *
+ * @param past_local_qty Set at the top of downloader(), indicates whether we've gotten anything new on this iteration.
+ * @param backoff_time: The amount of time to wait when a backoff is necessary in milliseconds.
+ */
+void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {
+   // Nothing new downloaded this iteration
    if (past_local_qty == local_qty) {
       if (backoff_time < 1000) {
          backoff_time *= 2;
@@ -543,65 +594,94 @@ void P2PClient::downloader_backoff(size_t past_local_qty,
       verbose("Nothing new available to download. Waiting for: " + std::to_string(((float) backoff_time) * 0.001) +
               " Seconds.");
 
+      // ADDED FOR ASSIGNMENT SUBMISSION: If 10 seconds have elapsed, ask the user if they are done and want to exit
       if (milliseconds_slept > 12000) {
          ece_573_TA_interaction();
       }
    } else {
+      // We just downloaded a new file, don't sleep the thread, and reset the backoff window to the shortest setting.
       backoff_time = 10;
       milliseconds_slept = 0;
    }
 }
 
-void P2PClient::write_time_log() {// Dump the logfile
+/**
+ * Output the CSV file of timestamps for each file that this client downloaded for timing experiments.
+ */
+void P2PClient::write_time_log() {
    std::string outgoing_message;
 
+   // Grab the "zero" time and open the file
    LogItem t = *local_time_logs.begin();
-   std::ofstream dmp(log);
-   outgoing_message = "Qty, t\n";
-   verbose(outgoing_message);
-   dmp.write(outgoing_message.c_str(), outgoing_message.length());
+   std::ofstream csv_file(log);
 
+   //Output CSV header
+   outgoing_message = "Qty, time\n";
+   verbose(outgoing_message);
+   csv_file.write(outgoing_message.c_str(), outgoing_message.length());
+
+   // Write each entry as a row to the CSV File, subtracting the zero time from (each) time to get elapsed (seconds)
    for (LogItem &l : local_time_logs) {
       outgoing_message = std::to_string(l.qty) + ", " +
                          std::to_string(((float) std::chrono::duration_cast<std::chrono::milliseconds>(
                                  l.time - t.time).count()) / 1000) +
                          "\n";
-      dmp.write(outgoing_message.c_str(), outgoing_message.length());
+      csv_file.write(outgoing_message.c_str(), outgoing_message.length());
       verbose(outgoing_message);
    }
-   dmp.close();
+   csv_file.close();
 }
 
-
+/**
+ * Called when client has decided to leave the system. Mark system_on as false, Contact the registration server to leave,
+ * and use callback from the registration server to unblock the listener in the main() thread.
+ */
 void P2PClient::shutdown_system() {
    system_on = false;
    warning("****************CLIENT LEAVING SYSTEM****************\n");
+
+   // Tell registration server we're leaving
    regserv_lock.lock();
    int sockfd = outgoing_connection(reg_serv, kControlPort);
    std::string outgoing_message = kLeave + " Cookie: " + std::to_string(cookie) + " \n\n";
    transmit(sockfd, outgoing_message);
 
+   // Sleep until registration server receives our leave
    std::this_thread::sleep_for(std::chrono::milliseconds(5));
    close(sockfd);
    regserv_lock.unlock();
+
+   // Sleep for 3 seconds to allow any running downloads to finish gracefully.
    std::this_thread::sleep_for(std::chrono::seconds(3));
 
+   // Write the CSV timestamp file.
    write_time_log();
 }
 
+/** Getter for system state
+ *
+ * @return true when system is still running, false when client has left the system. Used to break listener loop in main()
+ */
 bool P2PClient::get_system_on() {
    return system_on;
 }
 
+/**
+ * Special method for this submission to interact with the user after client B has left, so they can demo the system
+ * leaving and shutting down cleanly without ctrl-c.
+ */
 void P2PClient::ece_573_TA_interaction() {
-   warning("**********************  PAUSING *****************************\n\n");
-   std::string warn_message = " I noticed that nothing new has become available for download in 10 seconds. "
-                              "For the purpose of \n this assignment submission and your convenience, I have paused the loop"
-                              " that requests peer lists \nand attempts to download files. The threads that accept connections and"
-                              " handle TTL\n Keep-alives are still running, "
-                              "so if you wish to see a KeepAlive message exchange,\n simply leave me paused for 10 more seconds.\n\n"
-                              "If you would like to continue downloading, enter 'y', otherwise to exit the system\n (and remotely clean-shutdown the "
-                              "Registration Server), enter 'n'.\n\n RESUME DOWNLOAD LOOP? (y/n): ";
+   warning("**************************  PAUSING *****************************\n\n");
+   std::string warn_message = " I noticed that nothing new has become available for download \n"
+                              "in 10 seconds. For the purpose of this assignment submission \n"
+                              "and your convenience, I have paused the loop that requests peer\n"
+                              "and attempts to download files. The threads that accept connections\n"
+                              "and handle TTL Keep-alives are still running, so if you wish to \n"
+                              "see a KeepAlive message exchange, simply leave me paused for 10 more seconds.\n\n"
+                              "To continue downloading, enter 'y', otherwise, to exit the system (and \n"
+                              "remotely clean-shutdown the Registration Server), enter 'n'.\n\n"
+                              "**************************  PAUSING *****************************\n"
+                              " RESUME DOWNLOAD LOOP? (y/n): ";
    warning(warn_message);
    char choice;
    do {
