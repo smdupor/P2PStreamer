@@ -56,7 +56,7 @@ public:
 	bool equals(PeerNode *);
 	bool equals(std::string);
 	bool equals(int);
-	bool drop_entry();
+	bool has_drop_counter_expired();
 
 
 

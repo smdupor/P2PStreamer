@@ -4,6 +4,8 @@
  *	Contains the P2P client/server code for the file sharing nodes. Maintains the distributed index, serves files,
  *	and requests files to download from other peers.
  *
+ * Subclass of NetworkCommunicator.
+ *
  *  Created on: May 31, 2021
  *      Author: smdupor
  */
@@ -249,7 +251,7 @@ void P2PClient::keep_alive() {
 
       // For any peers that need to be dropped from the local list, do so.
       client_peerlist_lock.lock();
-      peers.remove_if([&](PeerNode &p) { return p.drop_entry(); });
+      peers.remove_if([&](PeerNode &p) { return p.has_drop_counter_expired(); });
       client_peerlist_lock.unlock();
    }
 }

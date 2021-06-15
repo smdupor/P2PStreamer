@@ -30,7 +30,7 @@ class NetworkCommunicator {
 protected:
    // Declare networking constants
    const std::string kDone = "P2PDI:0.1/DONE"; // Message indicates all data for this section of program flow is done
-   const int kInitialTTL = 7200;
+   const int kInitialTTL = 7200; // quantity TTL shall be set to initiall in seconds.
    const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in PeerNode.h
    const int MSG_LEN = 1024; // Size that all message buffers are initialized to
    const int kKeepAliveTimeout = 20; // Seconds between keepalive pings

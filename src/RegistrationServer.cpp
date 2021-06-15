@@ -191,7 +191,7 @@ void RegistrationServer::ttl_decrementer() {
          }
       }
       peerlist_lock.lock();
-      peers.remove_if([&](PeerNode &p) { return p.drop_entry(); });
+      peers.remove_if([&](PeerNode &p) { return p.has_drop_counter_expired(); });
       peerlist_lock.unlock();
 
    }

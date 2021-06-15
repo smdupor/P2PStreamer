@@ -1,5 +1,15 @@
-/*
+/**
  * NetworkCommunicator.cpp
+ *
+ * The NetworkCommunicator superclass encapsulates all functionality that is shared by both major components of the system,
+ * the Registration Server and the P2P Client. This includes establishing listening sockets, establishing outgoing
+ * connections, transmitting strings of data on the TCP stream, and receiving strings of data back. Any universally-shared
+ * instance variables (such as port, a list of peers, verbosity flags) are also encapsulated in this superclass.
+ *
+ * Also, all of the messaging constants, and system-wide numeric constants (like timeout settings) are encapsulated here.
+ *
+ * Finally, universally shared utility methods, such as a string splitter and multiple pretty-print methods, are
+ * encapsulated here.
  *
  *  Created on: May 31, 2021
  *      Author: smdupor
@@ -7,12 +17,20 @@
 
 #include "NetworkCommunicator.h"
 #include "P2PClient.h"
-
+/**
+ * Destructor -- override in subclasses.
+ */
 NetworkCommunicator::~NetworkCommunicator() {
    //Empty Destructor -- Override in Subclasses
 
 }
 
+/**
+ * Establish a listening TCP socket on this host.
+ *
+ * @param listen_port Port to listen on
+ * @return a socket file descriptor for the listening socket
+ */
 int NetworkCommunicator::listener(int listen_port) {
    int sockfd; // socket descriptor
    struct sockaddr_in serv_addr; //socket addresses
@@ -41,6 +59,13 @@ int NetworkCommunicator::listener(int listen_port) {
    return sockfd;
 }
 
+/**
+ * Establish a call-out connection from me to 'hostname' on 'port'
+ *
+ * @param hostname of the remote host
+ * @param port of the remote host
+ * @return a socket file descriptor for the established connection.
+ */
 int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    struct sockaddr_in serv_addr;
    struct hostent *server;
@@ -69,14 +94,28 @@ int NetworkCommunicator::outgoing_connection(std::string hostname, int port) {
    return sockfd;
 }
 
+/**
+ * Getter method for this host's listening port
+ *
+ * @return listening port
+ */
 int NetworkCommunicator::get_port() {
    return this->port;
 }
 
+/**
+ * Stub method to handle all the ttl timers. Override in subclasses.
+ */
 void NetworkCommunicator::ttl_decrementer() {
    //Override in subclasses
 }
 
+/**
+ * Handle transmitting a string of characters to a remote host.
+ *
+ * @param sockfd established socket descriptor of remote host
+ * @param out_message string to be sent
+ */
 void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
    int n;
    const char *out_buffer;
@@ -89,6 +128,14 @@ void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
       verbose("Error on write to buffer");
 }
 
+/**
+ * Receive a "normal" or "control" message, e.g. a message that contains NO file transfer payload (with unexpected
+ * character sequences like multiple-newlines, etc. Inspects contents of the data it is reading, and continues to read
+ * data until a "message-end" sequence of \n\n is detected.
+ *
+ * @param sockfd socket descriptor to read data from
+ * @return string of characters read from socket stream -- a COMPLETE series of messages.
+ */
 std::string NetworkCommunicator::receive(int sockfd) {
    int n = 0, timeout_counter = 0;
    char *in_buffer[MSG_LEN * 2];
@@ -123,6 +170,14 @@ std::string NetworkCommunicator::receive(int sockfd) {
    }
 }
 
+/**
+ * (RAW) Receive generalized data from a socket stream (File payload data) that will not be formatted in standard messaging
+ * format. Unlike receive(), this method continues to read as long as it is called, and ignores the contents of what it
+ * is reading. May return incomplete/partial messages or lines of file payload.
+ *
+ * @param sockfd
+ * @return
+ */
 std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    int n;
    char *in_buffer[MSG_LEN * 2];
@@ -139,7 +194,14 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd) {
    return in_message;
 }
 
-// Split up a string into a vector of substrings based on delimiter character
+/**
+ * Utility method that splits an input string into a vector of tokens based on the delimiter character, DROPPING the
+ * delimiter character.
+ *
+ * @param input the string to be split up
+ * @param delim the character to split by (eg, space or newline)
+ * @return a std::vector of strings that have been split into tokens with the delimiter removed.
+ */
 std::vector<std::string> NetworkCommunicator::split(const std::string &input, char delim) {
    std::vector<std::string> split_string; // Vector of string tokens to be returned
    size_t start = 0, end = 0; // Moving indices
@@ -157,33 +219,55 @@ std::vector<std::string> NetworkCommunicator::split(const std::string &input, ch
    return split_string;
 }
 
+/** (ent data)
+ * Print data (that has been sent by this host) in dark yellow.
+ * @param input the string to print
+ */
 void NetworkCommunicator::print_sent(std::string input) { // Print sent data in dark yellow
    std::cout << "\033[33m" << input << "\033[0m";
    std::cout.flush();
 }
 
+/**(received data)
+ * Print data (that has been received by this host) in green.
+ * @param input the string to print
+ */
 void NetworkCommunicator::print_recv(std::string input) { // Print receved data in green
    std::cout << "\033[32m" << input << "\033[0m";
    std::cout.flush();
 
 }
 
-// Prints debug output to the terminal when "verbose" mode is in use.
+/** (verbose mode support)
+ * When system is running in "verbose" mode, print the string to the console in purple.
+ * @param input the string to print
+ */
 void NetworkCommunicator::verbose(std::string input) {
    if (debug) {
       std::cout << "\033[35m" << input << "\033[0m" << std::endl;
    }
 }
 
+/** (system errors)
+ * Print the string to the console in Bright Red.
+ * @param input the string to print
+ */
 void NetworkCommunicator::error(std::string input) { // bright red
    std::cout << "\033[91m" << input << "\033[0m";
 }
 
+/** (system warnings)
+ * Print the string to the console in Bright Yellow
+ * @param input the string to print
+ */
 void NetworkCommunicator::warning(std::string input) { // bright yellow
    std::cout << "\033[93m" << input << "\033[0m";
 }
 
-//cyan
+/** (information messages)
+ * Print the string to the console in Cyan
+ * @param input the string to print
+ */
 void NetworkCommunicator::info(std::string input) {
    std::cout << "\033[36m" << input << "\033[0m";
 }
