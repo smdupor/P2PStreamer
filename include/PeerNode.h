@@ -1,7 +1,8 @@
-/*
- * PeerNode.h
+/**
+ * PeerNode
  *
- *	A record for an individual peer, to be stored on the Registration Server.
+ * Object containing the data for a remote network peer. Used by both clients and the registration server to manage
+ * peer contact and ttl information
  *
  *  Created on: May 25, 2021
  *      Author: smdupor
@@ -57,11 +58,6 @@ public:
 	bool equals(std::string);
 	bool equals(int);
 	bool has_drop_counter_expired();
-
-
-
-
-
 };
 
 #endif /* PEERNODE_H_ */

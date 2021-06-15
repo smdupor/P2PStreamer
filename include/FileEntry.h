@@ -1,6 +1,12 @@
-//
-// Created by smdupor on 6/4/21.
-//
+/**
+ * FileEntry
+ *
+ * Object containing a single distributed database entry representing a file to be shared. This file may be stored
+ * locally, or remotely, or both.
+ *
+ *  Created on: May 31, 2021
+ *      Author: smdupor
+ */
 
 #ifndef INCLUDE_FILEENTRY_H
 #define INCLUDE_FILEENTRY_H
@@ -20,9 +26,10 @@ private:
 
 public:
    FileEntry(int id, std::string hostname, int cookie, std::string &path, bool local, int ttl);
-   FileEntry(int id, std::string hostname, int cookie, std::string path, int length);   int get_length();
+   FileEntry(int id, std::string hostname, int cookie, std::string path, int length);
 
    // Getters
+   int get_length();
    std::string to_string();
    std::string to_msg();
    std::string get_hostname();

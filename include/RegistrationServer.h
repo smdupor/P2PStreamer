@@ -37,8 +37,12 @@ private:
 	int latest_cookie;
 	bool reverse;
 
-   int accept_reg(sockinfo sock);
-   std::string create_new_peer(sockinfo sock);
+   int accept_incoming_request(sockinfo socket_data);
+   std::string create_new_peer(sockinfo &socket_info);
+   void handle_registration_request(sockinfo &socket_info, const std::vector<std::string> &tokens);
+   void handle_leave_request(const sockinfo &socket_info, const std::vector<std::string> &tokens);
+   void handle_keepalive_request(const sockinfo &socket_info, const std::vector<std::string> &tokens);
+   void handle_get_peer_list_request(const sockinfo &socket_info, const std::vector<std::string> &tokens);
 
 public:
 	RegistrationServer(std::string logfile, bool verbose_debug);

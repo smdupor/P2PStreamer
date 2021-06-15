@@ -1,7 +1,9 @@
-/*
- * P2PClient.h
+/**
+ * P2PClient: Subclass of NetworkCommunicator
  *
- *	Contains top-level client code for the P2P Client hosts
+ *	Contains the P2P client/server code for the file sharing nodes. Maintains the distributed index, serves files,
+ *	and requests files to download from other peers.
+ *
  *
  *  Created on: May 31, 2021
  *      Author: smdupor
@@ -34,10 +36,11 @@
 #include "PeerNode.h"
 #include "FileEntry.h"
 
+/**
+ * Encapsulate a datapoint for a time value when a qty of files have been downloaded.
+ */
 struct LogItem {
-   int listen_socket;
-   socklen_t clilen; //client length
-   struct sockaddr_in cli_addr; //socket addresses
+   // On creation, log the immediate (steady) time and the input quantity
    explicit LogItem(size_t qty) {
          this->qty = qty;
          this->time = std::chrono::steady_clock::now();
@@ -46,6 +49,10 @@ struct LogItem {
    size_t qty;
 };
 
+
+/**
+ * P2P Client subclass header.
+ */
 class P2PClient : public NetworkCommunicator {
 private:
    const char *reg_serv;
@@ -56,6 +63,7 @@ private:
    std::list<LogItem> local_time_logs;
    long milliseconds_slept;
 
+   // Inline these for performance optimization
    inline void contact_registration_server(int sockfd, bool registration);
    inline void parse_config(std::string config_file);
    inline void check_files();
@@ -69,6 +77,7 @@ private:
    void find_wanted_file(std::_List_iterator<FileEntry> &want_file);
    void update_database(std::_List_iterator<FileEntry> &want_file);
    void ece_573_TA_interaction();
+   void shuffle_peer_list();
 
 public:
    P2PClient(std::string &addr_reg_server, std::string &logfile, bool verbose);
@@ -78,8 +87,6 @@ public:
    void accept_download_request(int sockfd);
    void downloader();
    bool get_system_on();
-
-   void shuffle_peer_list();
 };
 
 #endif /* INCLUDE_P2PCLIENT_H_ */
