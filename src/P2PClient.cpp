@@ -286,17 +286,18 @@ void P2PClient::downloader() {
       close(sockfd);
       regserv_lock.unlock();
       downloader_lock.lock();
+      if(system_on) {
+         auto want_file = files.begin();
+         find_wanted_file(want_file);
 
-      auto want_file = files.begin();
-      find_wanted_file(want_file);
+         if (want_file == files.end()) {
+            want_file = update_database(want_file);
+         }
+         // Find the first file in our list that we want.
 
-      if(want_file == files.end()) {
-         want_file = update_database(want_file);
+         download_file(want_file);
+         downloader_lock.unlock();
       }
-      // Find the first file in our list that we want.
-
-      download_file(want_file);
-      downloader_lock.unlock();
       downloader_backoff(past_local_qty, backoff_time);
 
       if (system_wide_qty == files.size()) {
@@ -321,7 +322,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
       }
       std::swap(shuffled_peers, peers);
    }
-
+   if(system_on) {
    for (PeerNode &p : peers) {
       if (p.active() && !p.locked()) {
          int sockfd = outgoing_connection(p.get_address(), p.get_port());
@@ -331,6 +332,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
             transmit(sockfd, outgoing_message);
 
             incoming_message = receive(sockfd);
+            close(sockfd);
             messages = split(incoming_message, '\n');
             files_lock.lock();
             for (std::string &message : messages) {
@@ -349,6 +351,7 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
                   }
                } else if (tokens[CONTROL] == kDone) {
                   close(sockfd);
+
                } else {
                   error("There was a problem with the TCP message received by downloader(): Buffer holds:" +
                         tokens[CONTROL]);
@@ -362,6 +365,9 @@ std::_List_iterator<FileEntry> &P2PClient::update_database(std::_List_iterator<F
       if (want_file != files.end()){
          break;
         }
+   }}
+   else {
+      want_file = files.end();
    }
    return want_file;
 }

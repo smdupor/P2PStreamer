@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 
    server.start();
 
-	NetworkCommunicator::info("********** All Hosts are gone; Exit clean/success ************");
+	NetworkCommunicator::info("********** All Hosts are gone; Exit clean/success ************\n");
 	return EXIT_SUCCESS;
 }
 

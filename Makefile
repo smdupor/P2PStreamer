@@ -16,6 +16,11 @@ OBJ_FILES_EXE = $(patsubst $(SRC_DIR_EXE)/%.cpp,$(OBJ_DIR_EXE)/%.o,$(SRC_FILES_E
 
 EXEC_FILES  = $(patsubst $(SRC_DIR_EXE)/%.cpp,$(BIN_DIR)/%,$(SRC_FILES_EXE))
 
+CLEAR_OLD:
+	rm -f bin/*
+	rm -f Client
+	rm -f RegServ
+
 $(OBJ_DIR_EXE)/%.o:	$(SRC_DIR_EXE)/%.cpp $(OBJ_FILES_LIB) $(HEAD_FILES)
 	$(CXX) -o $@ -c $< $(CXXFLAGS)
 
@@ -25,18 +30,19 @@ $(OBJ_DIR_LIB)/%.o:	$(SRC_DIR_LIB)/%.cpp $(HEAD_FILES)
 $(BIN_DIR)/%:	$(OBJ_DIR_EXE)/%.o
 	$(CXX) -o $@ -s $(subst $(BIN_DIR)/,$(OBJ_DIR_EXE)/,$@).o $(OBJ_FILES_LIB) $(HEAD_FILES) $(LDFLAGS) $(CXXFLAGS)
 
-all:	$(EXEC_FILES) $(OBJ_FILES_LIB)
-	@echo "BUILD SUCCESSFUL; CLEANING OBJECT FILES"
+all:	CLEAR_OLD $(EXEC_FILES) $(OBJ_FILES_LIB)
+	@echo "Cleaning and Symlinking."
 	rm -f obj/lib/*.o
 	rm -f obj/exe/*.o
-	#ssh 192.168.1.145 'rm ~/P2PStreamer/bin/*'
- 	#ssh 192.168.1.145 'rm ~/P2PStreamer/logs/*.csv
-	#ssh 192.168.1.31 rm ~/P2PStreamer/bin/*
-	#ssh 192.168.1.131 rm ~/P2PStreamer/logs/*.csv
-	#scp -r bin/ 192.168.1.145:~/P2PStreamer/
-	#scp -r bin/ 192.168.1.31:~/P2PStreamer/
+	ln -s ./bin/Client Client
+	ln -s ./bin/RegServ RegServ
 	@echo "****************************************************************************"
-	@echo "DONE. Start server using ./bin/RegServ , then start clients with ./bin/Client"
+	@echo "************************ BUILD COMPLETE ************************************"
+	@echo "Start registration server by running ./RegServ"
+	@echo ""
+	@echo "Then, start clients with './Client <code> <hostname>'"
+	@echo "Example: To start client 'A' and connect to a registration server on 10.0.0.3"
+	@echo "Execute Command:        ./Client a 10.0.0.3"
 	@echo "****************************************************************************"
 
 show:

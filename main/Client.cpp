@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
    }
 
    close(listen_socket);
-
+   std::this_thread::sleep_for(std::chrono::milliseconds(500));
    NetworkCommunicator::info("***************System is exiting successfully***********\n");
 		return EXIT_SUCCESS;
 }
