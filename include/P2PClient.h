@@ -53,7 +53,6 @@ private:
    int ttl{}, cookie;
    size_t expected_qty{}, local_qty{}, system_wide_qty{}; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
-   bool system_on;
    std::list<LogItem> logs;
    long milliseconds_slept;
 

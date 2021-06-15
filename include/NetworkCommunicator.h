@@ -60,7 +60,7 @@ protected:
 	std::string log;
 	bool lock;
 	int port;
-	bool debug;
+	bool debug, system_on;
 	std::time_t start_time;
 
 	virtual void ttl_decrementer();

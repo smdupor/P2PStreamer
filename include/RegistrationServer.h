@@ -36,7 +36,6 @@ class RegistrationServer: public NetworkCommunicator  {
 private:
 	int latest_cookie;
 	bool reverse;
-	bool system_on;
 
    int accept_reg(sockinfo sock);
    std::string create_new_peer(sockinfo sock);

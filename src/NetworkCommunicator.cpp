@@ -102,7 +102,8 @@ std::string NetworkCommunicator::receive(int sockfd) {
       n = read(sockfd, in_buffer, MSG_LEN * 2);
 
       if (n < 0 || timeout_counter > kTimeoutRetry) {
-         error("Error in reading socket");
+         if(system_on)
+            error("Error in reading socket");
          return kDone + " \n";
       } else if (std::strlen((char *) in_buffer) == 0) {
          std::this_thread::sleep_for(std::chrono::microseconds(kEmptyBufferSleep));
@@ -114,7 +115,8 @@ std::string NetworkCommunicator::receive(int sockfd) {
 
       // If we determine that we've got the entire message
       if (!in_message.empty() && in_message.substr(in_message.length() - 2) == "\n\n") {
-         print_recv(in_message);
+         if(system_on)
+            print_recv(in_message);
          in_message = in_message.substr(0, in_message.length() - 1); // Strip the extra newline
          return in_message;
       }
