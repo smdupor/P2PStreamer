@@ -53,10 +53,10 @@ private:
    int ttl{}, cookie;
    size_t expected_qty{}, local_qty{}, system_wide_qty{}; // Number of files we want to download for this client, number stored locally
    std::list<FileEntry> files;
-   std::list<LogItem> logs;
+   std::list<LogItem> local_time_logs;
    long milliseconds_slept;
 
-   inline void get_peer_list(int sockfd, bool registration);
+   inline void contact_registration_server(int sockfd, bool registration);
    inline void parse_config(std::string config_file);
    inline void check_files();
    inline void transmit_file(int sockfd, FileEntry &file);
