@@ -91,13 +91,13 @@ void initialization_interaction(int argc, char *const *argv, char &choose, bool 
    verbosity= false;
    server_id= std::string(argv[2]);
    if(server_id == "127.0.0.1" || server_id == "localhost") {
-      NetworkCommunicator::warning("You have selected a localhost loopback address for the registration server. \n"
-                                   "Your publicly-available IP address will not be detected properly unless ALL clients\n"
-                                   "are running on the localhost, and this client will not be able to communicate with"
-                                   "clients on other hosts. Do you want to select a different IP/Hostname? (y/n): ");
+      NetworkCommunicator::warning("You have selected a localhost loopback address for the registration server.\n"
+                                   "Your publicly-available IP address will not be detected properly, and communication\n"
+                                   "with external clients will fail, unless ALL clients are running on the localhost.\n\n");
+      NetworkCommunicator::error("Are you sure you want to continue with the localhost loopback adapter? (y/n): ");
       char ip_choice;
       std::cin >> ip_choice;
-      if(ip_choice=='y'){
+      if(ip_choice=='n'){
          NetworkCommunicator::warning("Enter the new hostname/IP address: ");
          std::cin >> server_id;
       }
