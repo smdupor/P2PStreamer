@@ -224,7 +224,7 @@ void P2PClient::keep_alive() {
       if (client_ttl_counter >= kKeepAliveTimeout) {
          regserv_lock.lock();
          int sockfd = outgoing_connection(reg_serv, kControlPort);
-         if (sockfd > 0) {
+         if (sockfd >= 0) {
             std::string outgoing_message = kKeepAlive + " Cookie: " + std::to_string(cookie) + " \n\n";
             transmit(sockfd, outgoing_message);
             std::string incoming_message = receive(sockfd); // swallow the ack
@@ -288,7 +288,7 @@ void P2PClient::accept_download_request(int sockfd) {
          std::this_thread::sleep_for(std::chrono::seconds(2));
          return;
       }
-      // Client is requesting a file download; Find it and call transmit_file
+         // Client is requesting a file download; Find it and call transmit_file
       else if (tokens[CONTROL] == kGetFile) {
          auto want_file = *std::find_if(files.begin(), files.end(), [&](FileEntry &f) {
             return f.equals(stoi(tokens[FILEID]), this->cookie);
@@ -352,31 +352,32 @@ void P2PClient::downloader() {
       int sockfd = outgoing_connection(reg_serv, kControlPort);
       if (sockfd >= 0) {
          contact_registration_server(sockfd, false);
-         close(sockfd);
-         regserv_lock.unlock();
-
-         // Take control of the downloader lock and search to see if there are files to download.
-         downloader_lock.lock();
-         if (system_on) {
-            auto want_file = files.begin();
-            find_wanted_file(want_file);
-
-            // If our list is entirely local files. Update the database with info from other peers
-            if (want_file == files.end())
-               update_database(want_file);
-
-            // We've found something to download (or not), proceed to attempt to download.
-            download_file(want_file);
-            downloader_lock.unlock();
-         }
-         // Call the backoff which determines if we should backoff our request speed to prevent network flooding.
-         downloader_backoff(past_local_qty, backoff_time);
-
-         // If all the peers across the entire ecosystem have finished propagating the files, shutdown (leave) the system.
-         if (system_wide_qty == files.size()) {
-            shutdown_system();
-         }
       }
+      close(sockfd);
+      regserv_lock.unlock();
+
+      // Take control of the downloader lock and search to see if there are files to download.
+      downloader_lock.lock();
+      if (system_on) {
+         auto want_file = files.begin();
+         find_wanted_file(want_file);
+
+         // If our list is entirely local files. Update the database with info from other peers
+         if (want_file == files.end())
+            update_database(want_file);
+
+         // We've found something to download (or not), proceed to attempt to download.
+         download_file(want_file);
+         downloader_lock.unlock();
+      }
+      // Call the backoff which determines if we should backoff our request speed to prevent network flooding.
+      downloader_backoff(past_local_qty, backoff_time);
+
+      // If all the peers across the entire ecosystem have finished propagating the files, shutdown (leave) the system.
+      if (system_wide_qty == files.size()) {
+         shutdown_system();
+      }
+
    }
 }
 
@@ -528,41 +529,43 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
       outgoing_message = kGetFile + want_file->to_msg() + "\n";
       transmit(sockfd, outgoing_message);
 
-      // Get back the control packet that tells us the amount of bytes of file payload.
-      incoming_message = receive_no_delim(sockfd);
-      messages = split(incoming_message, '\n');
-      if (messages[0].length() > 0) {
-         tokens = split(messages[0], ' ');
+      if(sockfd >= 0){
+         // Get back the control packet that tells us the amount of bytes of file payload.
+         incoming_message = receive_no_delim(sockfd);
+         messages = split(incoming_message, '\n');
+         if (messages[0].length() > 0) {
+            tokens = split(messages[0], ' ');
 
-         // Set up the file IO stream to write to disk and the bytes counter.
-         std::ofstream output_file(want_file->get_path());
-         int end_length = stoi(tokens[2]);
-         int bytes_written = 0;
+            // Set up the file IO stream to write to disk and the bytes counter.
+            std::ofstream output_file(want_file->get_path());
+            int end_length = stoi(tokens[2]);
+            int bytes_written = 0;
 
-         // If we have gotten both the header and some data in the first message (very likely) split, and use the data
-         if (messages.size() > 1) {
-            print_recv(messages[0]);
-            warning ("\n\n************ RECEIVING FILE: OUTPUT SUPPRESSED *************\n\n");
-            int initial_offset = messages[0].length() + 1;
-            incoming_message = incoming_message.substr(initial_offset);
-            output_file.write(incoming_message.c_str(), incoming_message.length());
-            bytes_written += incoming_message.length();
+            // If we have gotten both the header and some data in the first message (very likely) split, and use the data
+            if (messages.size() > 1) {
+               print_recv(messages[0]);
+               warning("\n\n************ RECEIVING FILE: OUTPUT SUPPRESSED *************\n\n");
+               int initial_offset = messages[0].length() + 1;
+               incoming_message = incoming_message.substr(initial_offset);
+               output_file.write(incoming_message.c_str(), incoming_message.length());
+               bytes_written += incoming_message.length();
+            }
+
+            // Continue to get file data and write to file until we have the entire file
+            while (bytes_written < end_length) {
+               incoming_message = receive_no_delim(sockfd);
+               output_file.write(incoming_message.c_str(), incoming_message.length());
+               bytes_written += incoming_message.length();
+            }
+            // Close the file and the connection.
+            output_file.close();
+            want_file->clear_lock();
+
+            close(sockfd);
+            peer.unlock();
+            // Add an entry for the file to the database
+            files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path(), end_length));
          }
-
-         // Continue to get file data and write to file until we have the entire file
-         while (bytes_written < end_length) {
-            incoming_message = receive_no_delim(sockfd);
-            output_file.write(incoming_message.c_str(), incoming_message.length());
-            bytes_written += incoming_message.length();
-         }
-         // Close the file and the connection.
-         output_file.close();
-         want_file->clear_lock();
-         close(sockfd);
-         peer.unlock();
-         // Add an entry for the file to the database
-         files.push_back(FileEntry(want_file->get_id(), hostname, cookie, want_file->get_path(), end_length));
-
          // Update our quantity of files on hard disk.
          ++local_qty;
 
@@ -603,9 +606,11 @@ void P2PClient::downloader_backoff(size_t past_local_qty, int &backoff_time) {
          ece_573_TA_interaction();
       }
    } else {
-      // We just downloaded a new file, don't sleep the thread, and reset the backoff window to the shortest setting.
+      // We just downloaded a new file, reset the backoff window to the shortest setting.
+      std::this_thread::sleep_for(std::chrono::milliseconds(backoff_time));
       backoff_time = 10;
       milliseconds_slept = 0;
+
    }
 }
 

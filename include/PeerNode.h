@@ -21,7 +21,7 @@ private:
 	int cookie, TTL, port, reg_count, dead_count, ttl_drop_counter;
 	bool activeNow;
 	time_t timeReg;
-   const int kTTLDec = 7; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
+   const int kTTLDec = 5; // TTLs shall be decremented every this many seconds//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    const int kTimeoutAttempts = 5; // This is the number of retries before a host is declared down.//////IMPORTANT: ALSO Dec'l in NetworkCommunicator.h
    bool lock_access;
 
@@ -43,6 +43,7 @@ public:
 	void decTTL(int seconds);
 	void leave();
 	void set_active(int ttl);
+	void set_active();
 	void set_inactive();
 	void report_down();
 	void reset_down();

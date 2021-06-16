@@ -117,10 +117,10 @@ int RegistrationServer::accept_incoming_request(sockinfo socket_data) {
  */
 void RegistrationServer::handle_get_peer_list_request(const sockinfo &socket_info, const std::vector<std::string> &tokens) {
    std::string out_message;
-   // Update the keepalive timer of the requester
-   std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
+   // Update the requester as active
+  std::find_if(peers.begin(), peers.end(), [&](PeerNode node) {
       return node.equals(stoi(tokens[COOKIE]));
-   })->keepAlive();
+   })->set_active();
 
    //Transmit each peer item to the requester
    for (PeerNode p : peers) {

@@ -125,7 +125,7 @@ void NetworkCommunicator::transmit(int sockfd, std::string &out_message) {
    n = write(sockfd, (const char *) out_buffer, strlen((const char *) out_buffer));
 
    if (n < 0)
-      verbose("Error on write to buffer");
+      verbose("Error on write to socket");
 }
 
 /**
@@ -150,7 +150,7 @@ std::string NetworkCommunicator::receive(int sockfd) {
 
       if (n < 0 || timeout_counter > kTimeoutRetry) {
          if(system_on)
-            error("Error in reading socket");
+            verbose("Client closed connection prematurely.");
          return kDone + " \n";
       } else if (std::strlen((char *) in_buffer) == 0) {
          std::this_thread::sleep_for(std::chrono::microseconds(kEmptyBufferSleep));
@@ -187,7 +187,7 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd) {
 
    n = read(sockfd, in_buffer, MSG_LEN * 2);
    if (n < 0)
-      verbose("Error in reading socket, Called by:" + debug);
+      verbose("Error in reading socket");
 
    in_message = std::string((char *) in_buffer);
    // Suppress printing of files in transmission to the console

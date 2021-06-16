@@ -126,6 +126,15 @@ void PeerNode::set_active(int ttl) {
 }
 
 /**
+ * Set this peer as active without modifying the TTL
+ */
+void PeerNode::set_active() {
+   this->activeNow = true;
+   if(this->TTL == 0)
+      this->TTL = 7200;
+}
+
+/**
  * Mark this peer as inactive
  */
 void PeerNode::set_inactive() {
