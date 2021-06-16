@@ -541,6 +541,8 @@ inline void P2PClient::download_file(std::list<FileEntry>::iterator &want_file) 
 
          // If we have gotten both the header and some data in the first message (very likely) split, and use the data
          if (messages.size() > 1) {
+            print_recv(messages[0]);
+            warning ("\n\n************ RECEIVING FILE: OUTPUT SUPPRESSED *************\n\n");
             int initial_offset = messages[0].length() + 1;
             incoming_message = incoming_message.substr(initial_offset);
             output_file.write(incoming_message.c_str(), incoming_message.length());

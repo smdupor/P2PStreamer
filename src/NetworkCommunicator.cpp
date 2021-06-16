@@ -190,7 +190,8 @@ std::string NetworkCommunicator::receive_no_delim(int sockfd) {
       verbose("Error in reading socket, Called by:" + debug);
 
    in_message = std::string((char *) in_buffer);
-   print_recv(in_message);
+   // Suppress printing of files in transmission to the console
+   // print_recv(in_message);
    return in_message;
 }
 
