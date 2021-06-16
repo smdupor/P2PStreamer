@@ -419,11 +419,9 @@ void P2PClient::update_database(std::_List_iterator<FileEntry> &want_file) {
                   if (file == files.end()) {
                      add_file_entry(tokens);
                   }
-               } else { // We've reached the end of the message
-                  close(sockfd);
                }
-               files_lock.unlock();
             }
+            files_lock.unlock();
          }
       }
       // Search again to see if there are new files available for download, if so, break and return to downloader().
